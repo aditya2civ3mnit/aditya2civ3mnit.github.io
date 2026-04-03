@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMC Pre-Trade Checklist</title>
+<script>
+  (function() {
+    var session = localStorage.getItem('auth_session');
+    if (!session) {
+      window.location.replace('signin.html');
+    }
+  })();
+</script>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<script src="backend-status.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e242c;
+    --border2: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --dim: #2a3040;
+
+    --purple: #7c6ff7;
+    --purple-bg: #1a1730;
+    --purple-border: #2e2860;
+
+    --coral: #f07060;
+    --coral-bg: #1f1618;
+    --coral-border: #3d2020;
+
+    --teal: #2dd4a0;
+    --teal-bg: #0f1e1a;
+    --teal-border: #1a3830;
+
+    --green: #52c77a;
+    --green-bg: #0f1e14;
+    --green-border: #1a3a24;
+
+    --amber: #f0a050;
+    --amber-bg: #1e1608;
+    --amber-border: #3a2c10;
+
+    --blue: #5090e0;
+    --blue-bg: #0f1828;
+    --blue-border: #1a2e50;
+
+    --gray: #606878;
+    --gray-bg: #141820;
+    --gray-border: #202830;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .container {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .checklist-board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    align-items: start;
+  }
+
+  .board-col {
+    min-width: 0;
+  }
+
+  .section-block {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: linear-gradient(180deg, rgba(24,28,34,0.88), rgba(17,20,24,0.92));
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .section-block .section-label {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding: 0 2px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #9eacbf;
+  }
+
+  header {
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 20px;
+  }
+
+  .menu-toggle {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1101;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    background: rgba(17, 20, 24, 0.95);
+    color: #dbe5f2;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .side-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 10, 0.55);
+    z-index: 1098;
+    display: none;
+  }
+
+  .side-backdrop.open {
+    display: block;
+  }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, rgba(22, 27, 35, 0.98), rgba(14, 18, 24, 0.98));
+    border-right: 1px solid var(--border2);
+    padding: 56px 14px 14px;
+    z-index: 1099;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+  }
+
+  .side-nav.open {
+    transform: translateX(0);
+  }
+
+  .side-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #9fb0c8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .side-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    margin-bottom: 8px;
+    background: rgba(17, 20, 24, 0.86);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .side-link.active {
+    border-color: var(--blue);
+    color: #d7e6ff;
+    background: var(--blue-bg);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    color: var(--text);
+    border-color: var(--gray);
+  }
+
+  .tab-btn.active {
+    color: #dce6f3;
+    border-color: var(--blue);
+    background: var(--blue-bg);
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  .panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #a8b6cc;
+    margin-bottom: 12px;
+    padding: 0 2px;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #e8edf3;
+    text-transform: uppercase;
+  }
+
+  .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 20px;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin-bottom: 26px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .progress-label span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .progress-label .count {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 10px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 4px;
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+
+  /* Check item */
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    background: rgba(17, 20, 24, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .check-item:hover {
+    border-color: var(--border2);
+    background: var(--surface2);
+  }
+
+  .check-item:active {
+    transform: scale(0.995);
+  }
+
+  .check-item.checked {
+    border-color: var(--item-color, var(--green));
+    background: var(--item-bg, var(--green-bg));
+  }
+
+  /* Checkbox box */
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--border2);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+
+  .check-item.checked .checkbox {
+    background: var(--item-color, var(--green));
+    border-color: var(--item-color, var(--green));
+  }
+
+  .checkbox svg {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .check-item.checked .checkbox svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .item-content {
+    flex: 1;
+  }
+
+  .item-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #d8e0ea;
+    line-height: 1.4;
+    transition: color 0.2s;
+  }
+
+  .check-item.checked .item-title {
+    color: var(--item-color, var(--green));
+  }
+
+  .item-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.5;
+    transition: color 0.2s;
+  }
+
+  .check-item.checked .item-desc {
+    color: var(--muted);
+  }
+
+  .item-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--item-color, var(--green));
+    background: var(--item-bg, var(--green-bg));
+    border: 1px solid var(--item-border, var(--green-border));
+    padding: 2px 7px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 5px;
+  }
+
+  /* Bias selector */
+  .bias-selector {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    margin-bottom: 10px;
+  }
+
+  .bias-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .bias-btn:hover {
+    border-color: var(--gray);
+    color: var(--text);
+  }
+
+  .bias-btn.active-short {
+    background: var(--coral-bg);
+    border-color: var(--coral);
+    color: var(--coral);
+  }
+
+  .bias-btn.active-long {
+    background: var(--teal-bg);
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* Trade details input row */
+  .trade-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+  }
+
+  .input-group label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .input-group input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 9px 10px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-group input:focus {
+    border-color: var(--blue);
+  }
+
+  .input-group input::placeholder {
+    color: var(--dim);
+  }
+
+  /* RR display */
+  .rr-display {
+    background: var(--blue-bg);
+    border: 1px solid var(--blue-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .rr-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .rr-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--blue);
+  }
+
+  .tp-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  /* Ready banner */
+  .ready-banner {
+    margin-top: 28px;
+    padding: 18px 20px;
+    background: var(--green-bg);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .ready-banner.visible {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .ready-banner .ready-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .ready-banner .ready-sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Not ready */
+  .not-ready-banner {
+    margin-top: 28px;
+    padding: 14px 20px;
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .not-ready-banner.visible {
+    display: block;
+  }
+
+  .not-ready-banner .nr-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Reset button */
+  .reset-btn {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--gray);
+    color: var(--text);
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* Timestamp */
+  .timestamp {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  /* Media uploads */
+  .media-wrap {
+    margin-top: 6px;
+    padding: 14px;
+    background: rgba(17, 20, 24, 0.72);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+  }
+
+  .replay-note {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    background: rgba(17, 20, 24, 0.85);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 10px 12px;
+    outline: none;
+    margin-bottom: 10px;
+  }
+
+  .replay-note:focus {
+    border-color: var(--blue);
+  }
+
+  .replay-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .replay-field {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: rgba(17, 20, 24, 0.85);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 10px 11px;
+    outline: none;
+  }
+
+  .replay-field:focus {
+    border-color: var(--blue);
+  }
+
+  .fab-stack {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    display: grid;
+    gap: 8px;
+    z-index: 1102;
+  }
+
+  .fab-btn {
+    border: 1px solid var(--blue-border);
+    background: linear-gradient(180deg, #1a2d4c, #11203a);
+    color: #dbe9ff;
+    border-radius: 10px;
+    min-width: 122px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.38);
+  }
+
+
+  .media-tools {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .media-btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .media-btn:hover {
+    border-color: var(--blue);
+    color: #e8edf3;
+  }
+
+  .media-btn.clear {
+    color: var(--muted);
+  }
+
+  .media-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .media-hint {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: -4px;
+    margin-bottom: 10px;
+  }
+
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .media-card {
+    position: relative;
+    border: 1px solid var(--border2);
+    background: #0d1015;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .media-card img,
+  .media-card video {
+    width: 100%;
+    height: 105px;
+    object-fit: cover;
+    display: block;
+    background: #0a0c0f;
+  }
+
+  .media-meta {
+    padding: 7px 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .media-name {
+    font-size: 11px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .media-size {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .remove-media {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    color: #f5f8ff;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .empty-media {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 8px 2px;
+  }
+
+  @media (max-width: 520px) {
+    .fab-stack {
+      right: 12px;
+      bottom: 12px;
+    }
+
+    .fab-btn {
+      min-width: 108px;
+      padding: 9px 10px;
+      font-size: 9px;
+    }
+
+    .media-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1280px) {
+    .container {
+      max-width: 980px;
+    }
+
+    .checklist-board {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .trade-inputs {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .container {
+      max-width: 700px;
+    }
+
+    .checklist-board {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-toggle" type="button" onclick="toggleSidebar(true)">☰</button>
+<div id="side-backdrop" class="side-backdrop" onclick="toggleSidebar(false)"></div>
+<nav id="side-nav" class="side-nav">
+  <div class="side-title">Navigation</div>
+  <a class="side-link active" href="index.html">Pre/Post Checklist</a>
+  <a class="side-link" href="trades.html">List Of Trades</a>
+</nav>
+
+<div class="container">
+
+  <header>
+    <div class="header-top">
+      <div class="logo-dot"></div>
+      <h1>Pre-Trade Checklist</h1>
+    </div>
+    <div class="subtitle">Smart Money Concepts · Confirm before entry</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-pretrade" type="button" onclick="switchTab('pretrade')">Pre-Trade Checklist</button>
+    <button class="tab-btn" id="tab-btn-posttrade" type="button" onclick="switchTab('posttrade')">Post-Trade Replay</button>
+  </div>
+
+  <section id="tab-pretrade" class="tab-panel active">
+  <div class="panel-title">Pre-Trade Checklist</div>
+
+  <section class="section-block" style="margin-bottom: 18px;">
+    <div class="section-label">00 · Trade Name</div>
+    <div class="trade-inputs" style="grid-template-columns: 1fr;">
+      <div class="input-group">
+        <label>Trade Name / Setup Label</label>
+        <input type="text" id="trade-name" placeholder="XAUUSD short at 7:30 AM"/>
+      </div>
+    </div>
+  </section>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Conditions met</span>
+      <span class="count"><span id="checked-count">0</span> / <span id="total-count">0</span></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="checklist-board">
+    <div class="board-col">
+      <!-- SECTION 1: HTF Setup -->
+      <section class="section-block" data-media-section="htf">
+        <div class="section-label">01 · Higher Timeframe Setup</div>
+
+        <div class="check-item" data-color="purple" data-id="htf-poi" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">HTF</div>
+            <div class="item-title">Price has tapped a HTF POI</div>
+            <div class="item-desc">Order Block (OB) or Fair Value Gap (FVG) on the higher timeframe has been reached</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="purple" data-id="htf-reaction" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">HTF</div>
+            <div class="item-title">Price is reacting to the POI (not just touching)</div>
+            <div class="item-desc">Look for rejection candles, wicks, or displacement away from the zone</div>
+          </div>
+        </div>
+
+        <div class="media-wrap">
+          <div class="media-tools">
+            <button class="media-btn" type="button" onclick="openMediaPicker('media-input-htf')">+ Add trade media</button>
+            <button class="media-btn clear" type="button" onclick="clearMedia('htf')">Clear media</button>
+          </div>
+          <input id="media-input-htf" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'htf')"/>
+          <div class="media-status" id="media-status-htf">0 files attached</div>
+          <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+          <div class="media-grid" id="media-grid-htf">
+            <div class="empty-media">No media attached yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: Liquidity -->
+      <section class="section-block" data-media-section="liquidity">
+        <div class="section-label">02 · Liquidity Sweep</div>
+
+        <div class="check-item" data-color="purple" data-id="sweep" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">Liquidity</div>
+            <div class="item-title">A liquidity pool has been swept</div>
+            <div class="item-desc">Buy-side (BSL) swept for shorts · Sell-side (SSL) swept for longs</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="purple" data-id="sweep-reaction" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">Liquidity</div>
+            <div class="item-title">Price has reacted to the sweep</div>
+            <div class="item-desc">Sharp reversal or strong close back inside range after the sweep wick</div>
+          </div>
+        </div>
+
+        <div class="media-wrap">
+          <div class="media-tools">
+            <button class="media-btn" type="button" onclick="openMediaPicker('media-input-liquidity')">+ Add trade media</button>
+            <button class="media-btn clear" type="button" onclick="clearMedia('liquidity')">Clear media</button>
+          </div>
+          <input id="media-input-liquidity" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'liquidity')"/>
+          <div class="media-status" id="media-status-liquidity">0 files attached</div>
+          <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+          <div class="media-grid" id="media-grid-liquidity">
+            <div class="empty-media">No media attached yet.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="board-col">
+      <!-- SECTION 3: Bias -->
+      <section class="section-block" data-media-section="bias">
+        <div class="section-label">03 · Trade Bias</div>
+        <div class="bias-selector">
+          <button class="bias-btn" id="btn-short" onclick="setBias('short')">▼ Short</button>
+          <button class="bias-btn" id="btn-long" onclick="setBias('long')">▲ Long</button>
+        </div>
+
+        <!-- SHORT items -->
+        <div id="short-items">
+          <div class="check-item" data-color="coral" data-id="bearish-choch" onclick="toggle(this)">
+            <div class="checkbox">
+              <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <div class="item-tag" style="--item-color:var(--coral);--item-bg:var(--coral-bg);--item-border:var(--coral-border)">Short · LTF</div>
+              <div class="item-title">Bearish CHoCH confirmed on LTF</div>
+              <div class="item-desc">A recent higher low (HL) has been broken with a strong bearish close</div>
+            </div>
+          </div>
+          <div class="check-item" data-color="coral" data-id="bearish-fvg" onclick="toggle(this)">
+            <div class="checkbox">
+              <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <div class="item-tag" style="--item-color:var(--coral);--item-bg:var(--coral-bg);--item-border:var(--coral-border)">Short · Entry</div>
+              <div class="item-title">Bearish FVG identified from CHoCH leg</div>
+              <div class="item-desc">FVG formed during the displacement candle that caused the CHoCH — entry on retracement into this gap</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LONG items -->
+        <div id="long-items" style="display:none">
+          <div class="check-item" data-color="teal" data-id="bullish-choch" onclick="toggle(this)">
+            <div class="checkbox">
+              <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <div class="item-tag" style="--item-color:var(--teal);--item-bg:var(--teal-bg);--item-border:var(--teal-border)">Long · LTF</div>
+              <div class="item-title">Bullish CHoCH confirmed on LTF</div>
+              <div class="item-desc">A recent lower high (LH) has been broken with a strong bullish close</div>
+            </div>
+          </div>
+          <div class="check-item" data-color="teal" data-id="bullish-fvg" onclick="toggle(this)">
+            <div class="checkbox">
+              <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <div class="item-tag" style="--item-color:var(--teal);--item-bg:var(--teal-bg);--item-border:var(--teal-border)">Long · Entry</div>
+              <div class="item-title">Bullish FVG identified from CHoCH leg</div>
+              <div class="item-desc">FVG formed during the displacement candle that caused the CHoCH — entry on retracement into this gap</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="media-wrap">
+          <div class="media-tools">
+            <button class="media-btn" type="button" onclick="openMediaPicker('media-input-bias')">+ Add trade media</button>
+            <button class="media-btn clear" type="button" onclick="clearMedia('bias')">Clear media</button>
+          </div>
+          <input id="media-input-bias" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'bias')"/>
+          <div class="media-status" id="media-status-bias">0 files attached</div>
+          <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+          <div class="media-grid" id="media-grid-bias">
+            <div class="empty-media">No media attached yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: Entry & RR -->
+      <section class="section-block">
+        <div class="section-label">04 · Entry Levels & Take Profit</div>
+
+        <div class="trade-inputs">
+          <div class="input-group">
+            <label>Entry</label>
+            <input type="number" id="entry" placeholder="0.00" oninput="calcRR()" step="any"/>
+          </div>
+          <div class="input-group">
+            <label>Stop Loss</label>
+            <input type="number" id="sl" placeholder="0.00" oninput="calcRR()" step="any"/>
+          </div>
+          <div class="input-group">
+            <label>Nearest LRL</label>
+            <input type="number" id="lrl" placeholder="0.00" oninput="calcRR()" step="any"/>
+          </div>
+        </div>
+
+        <div class="rr-display" id="rr-display" style="display:none">
+          <div>
+            <div class="rr-label">Take Profit (1:2 RR)</div>
+            <div class="rr-value" id="rr-tp">—</div>
+          </div>
+          <div style="text-align:center">
+            <div class="rr-label">Nearest LRL</div>
+            <div class="rr-value" id="rr-lrl" style="color:var(--amber)">—</div>
+          </div>
+          <div style="text-align:right">
+            <div class="rr-label">Use TP</div>
+            <div class="tp-value" id="rr-use">—</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="green" data-id="tp-set" onclick="toggle(this)" style="margin-top:8px">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--green);--item-bg:var(--green-bg);--item-border:var(--green-border)">Take Profit</div>
+            <div class="item-title">TP set at 1:2 RR or nearest LRL (whichever is closer)</div>
+            <div class="item-desc">If a major LRL sits before your 2R target, that LRL is your TP</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="blue" data-id="be-plan" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--blue);--item-bg:var(--blue-bg);--item-border:var(--blue-border)">Risk Mgmt</div>
+            <div class="item-title">Plan to move SL to breakeven at +1R</div>
+            <div class="item-desc">Once price moves 1R in your favour, SL moves to entry — trade becomes risk-free</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="board-col">
+      <!-- SECTION 5: Final filters -->
+      <section class="section-block">
+        <div class="section-label">05 · Final Filters</div>
+
+        <div class="check-item" data-color="amber" data-id="session" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--amber);--item-bg:var(--amber-bg);--item-border:var(--amber-border)">Session</div>
+            <div class="item-title">Active session: London or New York</div>
+            <div class="item-desc">Avoid Asian session — sweeps and CHoCHs are lower quality during low-volume hours</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="amber" data-id="htf-trend" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--amber);--item-bg:var(--amber-bg);--item-border:var(--amber-border)">Trend</div>
+            <div class="item-title">Trade is aligned with Daily bias (or marked counter-trend)</div>
+            <div class="item-desc">Counter-trend trades carry extra risk — reduce size if going against the Daily structure</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="amber" data-id="news" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--amber);--item-bg:var(--amber-bg);--item-border:var(--amber-border)">News</div>
+            <div class="item-title">No high-impact news within 30 minutes</div>
+            <div class="item-desc">Check economic calendar — avoid entering just before NFP, CPI, FOMC, or similar events</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Result banners -->
+  <div class="ready-banner" id="ready-banner">
+    <div class="ready-title">✓ Setup Confirmed — Clear to Execute</div>
+    <div class="ready-sub">All conditions met. Enter at the FVG with your planned size.</div>
+  </div>
+
+  <div class="not-ready-banner" id="not-ready-banner">
+    <div class="nr-title">⚠ Incomplete — Do Not Enter Yet</div>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ Reset for next trade</button>
+
+  <div class="timestamp" id="timestamp"></div>
+  </section>
+
+  <section id="tab-posttrade" class="tab-panel">
+    <div class="panel-title">Post-Trade Replay</div>
+    <div class="checklist-board">
+      <div class="board-col">
+        <section class="section-block" data-media-section="ideal">
+          <div class="section-label">01 · Ideal Execution</div>
+          <textarea class="replay-note" id="ideal-note" placeholder="What should the ideal execution have looked like?"></textarea>
+          <div class="media-wrap">
+            <div class="media-tools">
+              <button class="media-btn" type="button" onclick="openMediaPicker('media-input-ideal')">+ Add media</button>
+              <button class="media-btn clear" type="button" onclick="clearMedia('ideal')">Clear media</button>
+            </div>
+            <input id="media-input-ideal" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'ideal')"/>
+            <div class="media-status" id="media-status-ideal">0 files attached</div>
+            <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+            <div class="media-grid" id="media-grid-ideal">
+              <div class="empty-media">No media attached yet.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="board-col">
+        <section class="section-block" data-media-section="real">
+          <div class="section-label">02 · Real Execution</div>
+          <textarea class="replay-note" id="real-note" placeholder="What actually happened in execution?"></textarea>
+          <div class="media-wrap">
+            <div class="media-tools">
+              <button class="media-btn" type="button" onclick="openMediaPicker('media-input-real')">+ Add media</button>
+              <button class="media-btn clear" type="button" onclick="clearMedia('real')">Clear media</button>
+            </div>
+            <input id="media-input-real" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'real')"/>
+            <div class="media-status" id="media-status-real">0 files attached</div>
+            <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+            <div class="media-grid" id="media-grid-real">
+              <div class="empty-media">No media attached yet.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="board-col">
+        <section class="section-block">
+          <div class="section-label">03 · Trade Lifecycle & Comments</div>
+          <div class="replay-grid">
+            <select class="replay-field" id="trade-state">
+              <option value="placed">Trade State: Order Placed</option>
+              <option value="running">Trade State: Running</option>
+              <option value="closed">Trade State: Closed</option>
+              <option value="cancelled">Trade State: Cancelled</option>
+            </select>
+            <select class="replay-field" id="trade-outcome">
+              <option value="pending">Outcome: Pending</option>
+              <option value="tp-hit">Outcome: TP Hit</option>
+              <option value="sl-hit">Outcome: SL Hit</option>
+              <option value="breakeven">Outcome: Breakeven</option>
+              <option value="partial-close">Outcome: Partial Close</option>
+              <option value="manual-close">Outcome: Manual Close</option>
+              <option value="cancelled">Outcome: Cancelled</option>
+            </select>
+          </div>
+          <textarea class="replay-note" id="trade-comments" placeholder="Add comments, observations, or close-management notes."></textarea>
+        </section>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="fab-stack">
+    <button class="fab-btn" type="button" onclick="saveCurrentTrade()">Save Trade</button>
+  </div>
+
+</div>
+
+<script>
+  const colorMap = {
+    purple: { color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+    coral:  { color: 'var(--coral)',  bg: 'var(--coral-bg)',  border: 'var(--coral-border)' },
+    teal:   { color: 'var(--teal)',   bg: 'var(--teal-bg)',   border: 'var(--teal-border)' },
+    green:  { color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+    blue:   { color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+    amber:  { color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  };
+
+  let currentBias = 'short';
+  let activeTab = 'pretrade';
+  let lastMediaSection = 'htf';
+  let activeTradeRecordId = null;
+  let activeTradeCreatedAt = null;
+  const TRADE_STORAGE_KEY = 'smc_trade_records_v1';
+  const ACTIVE_TRADE_KEY = 'smc_active_trade_v1';
+  const ACTIVE_TRADE_ID_KEY = 'smc_active_trade_id_v1';
+  const SELECTED_TRADE_PAYLOAD_KEY = 'smc_selected_trade_payload_v1';
+  const mediaBuckets = {
+    htf: [],
+    liquidity: [],
+    bias: [],
+    ideal: [],
+    real: [],
+  };
+  const tradeRecords = [];
+
+  function toggleSidebar(open) {
+    const nav = document.getElementById('side-nav');
+    const backdrop = document.getElementById('side-backdrop');
+    if (!nav || !backdrop) return;
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+  }
+
+  async function loadTradeRecords() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = await FrontendAPI.listTrades();
+        const records = result && Array.isArray(result.trades) ? result.trades : [];
+        tradeRecords.length = 0;
+        records.forEach(item => tradeRecords.push(item));
+        return;
+      }
+
+      const raw = localStorage.getItem(TRADE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        tradeRecords.length = 0;
+        parsed.forEach(item => tradeRecords.push(item));
+      }
+    } catch (err) {
+      console.error('Could not load trade records', err);
+    }
+  }
+
+  function persistTradeRecords() {
+    if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      return true;
+    }
+
+    try {
+      localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify(tradeRecords));
+      return true;
+    } catch (err) {
+      console.error('Could not persist trade records', err);
+      alert('Storage limit reached. Please clear older local trade records.');
+      return false;
+    }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadMediaSection(section) {
+    const bucket = getBucket(section);
+    const filesToUpload = [];
+    const existingUrls = [];
+
+    for (const item of bucket) {
+      if (!item || !item.file) continue;
+      
+      // If it's a new File object (not from restored data), upload it
+      if (item.file instanceof File) {
+        filesToUpload.push(item.file);
+      } else if (item.url && typeof item.url === 'string') {
+        // Already has a URL (either CDN or S3), keep it
+        existingUrls.push({
+          name: item.file.name || 'media.bin',
+          type: item.file.type || 'application/octet-stream',
+          size: item.file.size || 0,
+          url: item.url,
+        });
+      }
+    }
+
+    const uploadedUrls = [];
+
+    // Upload new files if API mode is enabled
+    if (filesToUpload.length > 0 && window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      try {
+        const result = await FrontendAPI.uploadTradeMedia(section, filesToUpload);
+        if (result && Array.isArray(result.files)) {
+          uploadedUrls.push(...result.files.map(f => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            url: f.url,
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to upload media for section ' + section, err);
+        throw new Error('Failed to upload media: ' + (err.message || 'Unknown error'));
+      }
+    } else if (filesToUpload.length > 0) {
+      // In local mode, convert to data URLs
+      for (const file of filesToUpload) {
+        const dataUrl = await fileToDataUrl(file);
+        uploadedUrls.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: dataUrl,
+          dataUrl: dataUrl,
+        });
+      }
+    }
+
+    return [...existingUrls, ...uploadedUrls];
+  }
+
+  async function serializeMediaSection(section) {
+    return await uploadMediaSection(section);
+  }
+
+  async function serializeAllMedia() {
+    const payload = {};
+    const sections = Object.keys(mediaBuckets);
+    for (const section of sections) {
+      payload[section] = await serializeMediaSection(section);
+    }
+    return payload;
+  }
+
+  function restoreMediaFromPayload(mediaPayload) {
+    clearMedia();
+    if (!mediaPayload || typeof mediaPayload !== 'object') return;
+
+    Object.keys(mediaBuckets).forEach(section => {
+      const list = Array.isArray(mediaPayload[section]) ? mediaPayload[section] : [];
+      list.forEach(item => {
+        if (!item || (!item.url && !item.dataUrl)) return;
+        
+        const url = item.url || item.dataUrl;
+        const pseudoFile = {
+          name: item.name || 'media.bin',
+          type: item.type || 'application/octet-stream',
+          size: item.size || 0,
+        };
+        
+        mediaBuckets[section].push({
+          file: pseudoFile,
+          url: url,
+          dataUrl: item.dataUrl,
+        });
+      });
+      renderMedia(section);
+    });
+  }
+
+  async function collectTradeSnapshot() {
+    const items = getVisibleItems();
+    const checked = items.filter(el => el.classList.contains('checked')).length;
+    const total = items.length;
+    const entry = document.getElementById('entry').value || '';
+    const sl = document.getElementById('sl').value || '';
+    const lrl = document.getElementById('lrl').value || '';
+    const mediaPayload = await serializeAllMedia();
+
+    return {
+      createdAt: new Date().toISOString(),
+      tradeName: document.getElementById('trade-name').value.trim(),
+      tradeState: document.getElementById('trade-state').value || 'placed',
+      outcome: document.getElementById('trade-outcome').value || 'pending',
+      comments: document.getElementById('trade-comments').value.trim(),
+      bias: currentBias,
+      checkedIds: Array.from(document.querySelectorAll('.check-item.checked'))
+        .map(el => el.dataset.id)
+        .filter(Boolean),
+      progress: { checked, total },
+      prices: { entry, sl, lrl },
+      notes: {
+        ideal: document.getElementById('ideal-note').value.trim(),
+        real: document.getElementById('real-note').value.trim(),
+        tradeState: document.getElementById('trade-state').value || 'placed',
+        outcome: document.getElementById('trade-outcome').value || 'pending',
+        comments: document.getElementById('trade-comments').value.trim(),
+      },
+      media: mediaPayload,
+      mediaCounts: {
+        htf: mediaPayload.htf.length,
+        liquidity: mediaPayload.liquidity.length,
+        bias: mediaPayload.bias.length,
+        ideal: mediaPayload.ideal.length,
+        real: mediaPayload.real.length,
+      },
+    };
+  }
+
+  function replaceOrInsertTrade(savedTrade) {
+    if (!savedTrade) return;
+
+    const savedId = savedTrade.id != null ? String(savedTrade.id) : null;
+    if (!savedId) {
+      tradeRecords.unshift(savedTrade);
+      return;
+    }
+
+    const index = tradeRecords.findIndex(function (trade) {
+      return String(trade && trade.id) === savedId;
+    });
+
+    if (index >= 0) {
+      tradeRecords[index] = savedTrade;
+      return;
+    }
+
+    tradeRecords.unshift(savedTrade);
+  }
+
+  async function saveCurrentTrade() {
+    try {
+      // Show upload status
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const hasMedia = Object.values(mediaBuckets).some(bucket => bucket.length > 0);
+        if (hasMedia) {
+          alert('Uploading media files...');
+        }
+      }
+
+      const snapshot = await collectTradeSnapshot();
+
+      const isEditMode = activeTradeRecordId !== null && activeTradeRecordId !== undefined;
+      const payload = Object.assign({}, snapshot, {
+        createdAt: isEditMode && activeTradeCreatedAt ? activeTradeCreatedAt : snapshot.createdAt
+      });
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = isEditMode
+          ? await FrontendAPI.updateTrade(activeTradeRecordId, payload)
+          : await FrontendAPI.createTrade(payload);
+
+        if (result && result.trade) {
+          replaceOrInsertTrade(result.trade);
+          activeTradeRecordId = result.trade.id != null ? String(result.trade.id) : activeTradeRecordId;
+          activeTradeCreatedAt = result.trade.createdAt || payload.createdAt;
+        }
+        alert(isEditMode ? 'Trade updated in database.' : 'Trade saved to database.');
+        return;
+      }
+
+      if (isEditMode) {
+        const localSnapshot = Object.assign({}, payload, { id: activeTradeRecordId, createdAt: activeTradeCreatedAt || payload.createdAt, updatedAt: new Date().toISOString() });
+        replaceOrInsertTrade(localSnapshot);
+      } else {
+        const localSnapshot = Object.assign({}, payload, { id: Date.now() });
+        tradeRecords.unshift(localSnapshot);
+        activeTradeRecordId = String(localSnapshot.id);
+        activeTradeCreatedAt = localSnapshot.createdAt;
+      }
+
+      const ok = persistTradeRecords();
+      if (!ok) {
+        if (!isEditMode) {
+          tradeRecords.shift();
+        }
+        return;
+      }
+
+      alert(isEditMode ? 'Trade updated.' : 'Trade saved with media. Open List Of Trades from the left sidebar to load it.');
+    } catch (err) {
+      console.error('Could not save trade', err);
+      alert('Failed to save trade: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  function applyCheckedStyle(el) {
+    const c = colorMap[el.dataset.color] || colorMap.green;
+    el.style.setProperty('--item-color', c.color);
+    el.style.setProperty('--item-bg', c.bg);
+    el.style.setProperty('--item-border', c.border);
+  }
+
+  function loadTradePayload(trade) {
+    if (!trade) return;
+
+    const tradeName = trade.tradeName || trade.name || '';
+    const notes = trade.notes || {};
+
+    activeTradeRecordId = trade.id != null ? String(trade.id) : null;
+    activeTradeCreatedAt = trade.createdAt || null;
+
+    document.querySelectorAll('.check-item').forEach(el => {
+      el.classList.remove('checked');
+      applyCheckedStyle(el);
+    });
+
+    setBias(trade.bias === 'long' ? 'long' : 'short');
+
+    if (Array.isArray(trade.checkedIds)) {
+      trade.checkedIds.forEach(id => {
+        const el = document.querySelector('.check-item[data-id="' + id + '"]');
+        if (el) {
+          el.classList.add('checked');
+          applyCheckedStyle(el);
+        }
+      });
+    }
+
+    document.getElementById('entry').value = (trade.prices && trade.prices.entry) || '';
+    document.getElementById('sl').value = (trade.prices && trade.prices.sl) || '';
+    document.getElementById('lrl').value = (trade.prices && trade.prices.lrl) || '';
+    document.getElementById('trade-name').value = tradeName;
+    document.getElementById('ideal-note').value = notes.ideal || trade.idealNote || '';
+    document.getElementById('real-note').value = notes.real || trade.realNote || '';
+    document.getElementById('trade-state').value = notes.tradeState || trade.tradeState || 'placed';
+    document.getElementById('trade-outcome').value = notes.outcome || trade.outcome || 'pending';
+    document.getElementById('trade-comments').value = notes.comments || trade.comments || trade.partialCloseReason || '';
+
+    restoreMediaFromPayload(trade.media);
+
+    calcRR();
+    updateProgress();
+    switchTab('pretrade');
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tab-btn-pretrade').classList.toggle('active', tab === 'pretrade');
+    document.getElementById('tab-btn-posttrade').classList.toggle('active', tab === 'posttrade');
+    document.getElementById('tab-pretrade').classList.toggle('active', tab === 'pretrade');
+    document.getElementById('tab-posttrade').classList.toggle('active', tab === 'posttrade');
+  }
+
+  function getBucket(section) {
+    if (!mediaBuckets[section]) mediaBuckets[section] = [];
+    return mediaBuckets[section];
+  }
+
+  function openMediaPicker(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) input.click();
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function renderMedia(section) {
+    const bucket = getBucket(section);
+    const grid = document.getElementById('media-grid-' + section);
+    const status = document.getElementById('media-status-' + section);
+    if (!grid || !status) return;
+
+    status.textContent = bucket.length + (bucket.length === 1 ? ' file attached' : ' files attached');
+
+    if (bucket.length === 0) {
+      grid.innerHTML = '<div class="empty-media">No media attached yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = bucket.map((item, idx) => {
+      const preview = item.file.type.startsWith('video/')
+        ? '<video src="' + item.url + '" muted controls preload="metadata"></video>'
+        : '<img src="' + item.url + '" alt="Trade media preview" loading="lazy"/>';
+
+      return '<div class="media-card">'
+        + '<button class="remove-media" type="button" onclick="removeMedia(\'' + section + '\',' + idx + ')" aria-label="Remove media">×</button>'
+        + preview
+        + '<div class="media-meta">'
+        + '<div class="media-name">' + item.file.name + '</div>'
+        + '<div class="media-size">' + formatBytes(item.file.size) + '</div>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  function handleMediaSelect(event, section) {
+    const files = Array.from(event.target.files || []);
+    addMediaFiles(files, section);
+    event.target.value = '';
+  }
+
+  function addMediaFiles(files, section) {
+    const bucket = getBucket(section);
+    files.forEach(file => {
+      if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+        bucket.push({ file, url: URL.createObjectURL(file), dataUrl: null });
+      }
+    });
+    renderMedia(section);
+  }
+
+  function getPasteSection() {
+    if (lastMediaSection) return lastMediaSection;
+
+    const focused = document.activeElement;
+    if (focused) {
+      const block = focused.closest('[data-media-section]');
+      if (block && block.dataset.mediaSection) return block.dataset.mediaSection;
+    }
+
+    if (activeTab === 'posttrade') return 'real';
+    return 'htf';
+  }
+
+  function handlePasteMedia(event) {
+    if (!event.clipboardData) return;
+
+    const files = [];
+    Array.from(event.clipboardData.items || []).forEach(item => {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+    });
+
+    if (files.length === 0) return;
+    event.preventDefault();
+    addMediaFiles(files, getPasteSection());
+  }
+
+  function removeMedia(section, index) {
+    const bucket = getBucket(section);
+    const removed = bucket.splice(index, 1)[0];
+    if (removed) URL.revokeObjectURL(removed.url);
+    renderMedia(section);
+  }
+
+  function clearMedia(section) {
+    if (section) {
+      const bucket = getBucket(section);
+      bucket.forEach(item => {
+        if (item && typeof item.url === 'string' && item.url.startsWith('blob:')) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
+      bucket.length = 0;
+      const input = document.getElementById('media-input-' + section);
+      if (input) input.value = '';
+      renderMedia(section);
+      return;
+    }
+
+    Object.keys(mediaBuckets).forEach(key => clearMedia(key));
+  }
+
+  function toggle(el) {
+    el.classList.toggle('checked');
+    const c = colorMap[el.dataset.color] || colorMap.green;
+    el.style.setProperty('--item-color', c.color);
+    el.style.setProperty('--item-bg', c.bg);
+    el.style.setProperty('--item-border', c.border);
+    updateProgress();
+  }
+
+  function setBias(bias) {
+    currentBias = bias;
+    document.getElementById('btn-short').className = 'bias-btn' + (bias === 'short' ? ' active-short' : '');
+    document.getElementById('btn-long').className  = 'bias-btn' + (bias === 'long'  ? ' active-long'  : '');
+    document.getElementById('short-items').style.display = bias === 'short' ? 'block' : 'none';
+    document.getElementById('long-items').style.display  = bias === 'long'  ? 'block' : 'none';
+
+    // Uncheck hidden bias items
+    const hideId = bias === 'short' ? 'long-items' : 'short-items';
+    document.querySelectorAll('#' + hideId + ' .check-item').forEach(el => el.classList.remove('checked'));
+    updateProgress();
+  }
+
+  function getVisibleItems() {
+    return Array.from(document.querySelectorAll('.check-item')).filter(el => {
+      return el.closest('#short-items') === null && el.closest('#long-items') === null ||
+             (currentBias === 'short' && el.closest('#short-items')) ||
+             (currentBias === 'long'  && el.closest('#long-items'));
+    });
+  }
+
+  function updateProgress() {
+    const items = getVisibleItems();
+    const total = items.length;
+    const checked = items.filter(el => el.classList.contains('checked')).length;
+    document.getElementById('checked-count').textContent = checked;
+    document.getElementById('total-count').textContent = total;
+    const pct = total > 0 ? (checked / total) * 100 : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+
+    const ready = document.getElementById('ready-banner');
+    const notReady = document.getElementById('not-ready-banner');
+
+    if (checked === total && total > 0) {
+      ready.classList.add('visible');
+      notReady.classList.remove('visible');
+      document.getElementById('timestamp').textContent = 'Confirmed: ' + new Date().toLocaleTimeString();
+    } else if (checked > 0) {
+      ready.classList.remove('visible');
+      notReady.classList.add('visible');
+      document.getElementById('timestamp').textContent = '';
+    } else {
+      ready.classList.remove('visible');
+      notReady.classList.remove('visible');
+      document.getElementById('timestamp').textContent = '';
+    }
+  }
+
+  function calcRR() {
+    const entry = parseFloat(document.getElementById('entry').value);
+    const sl    = parseFloat(document.getElementById('sl').value);
+    const lrl   = parseFloat(document.getElementById('lrl').value);
+    const display = document.getElementById('rr-display');
+
+    if (isNaN(entry) || isNaN(sl)) { display.style.display = 'none'; return; }
+
+    const risk = Math.abs(entry - sl);
+    if (risk === 0) { display.style.display = 'none'; return; }
+
+    const isShort = entry > sl;
+    const tp2r = isShort ? entry - 2 * risk : entry + 2 * risk;
+
+    display.style.display = 'flex';
+    document.getElementById('rr-tp').textContent = tp2r.toFixed(5);
+
+    if (!isNaN(lrl)) {
+      document.getElementById('rr-lrl').textContent = lrl.toFixed(5);
+      // Whichever is closer to entry
+      const distTo2R  = Math.abs(tp2r - entry);
+      const distToLRL = Math.abs(lrl  - entry);
+      const useLRL = distToLRL < distTo2R;
+      document.getElementById('rr-use').textContent = useLRL ? lrl.toFixed(5) + ' (LRL)' : tp2r.toFixed(5) + ' (2R)';
+      document.getElementById('rr-use').style.color = useLRL ? 'var(--amber)' : 'var(--green)';
+    } else {
+      document.getElementById('rr-lrl').textContent = '—';
+      document.getElementById('rr-use').textContent = tp2r.toFixed(5) + ' (2R)';
+      document.getElementById('rr-use').style.color = 'var(--green)';
+    }
+  }
+
+  function resetAll() {
+    document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
+    activeTradeRecordId = null;
+    activeTradeCreatedAt = null;
+    document.getElementById('entry').value = '';
+    document.getElementById('sl').value = '';
+    document.getElementById('lrl').value = '';
+    document.getElementById('trade-name').value = '';
+    document.getElementById('ideal-note').value = '';
+    document.getElementById('real-note').value = '';
+    document.getElementById('trade-state').value = 'placed';
+    document.getElementById('trade-outcome').value = 'pending';
+    document.getElementById('trade-comments').value = '';
+    clearMedia();
+    document.getElementById('rr-display').style.display = 'none';
+    document.getElementById('ready-banner').classList.remove('visible');
+    document.getElementById('not-ready-banner').classList.remove('visible');
+    document.getElementById('timestamp').textContent = '';
+    updateProgress();
+  }
+
+  async function initPage() {
+    document.addEventListener('paste', handlePasteMedia);
+    document.addEventListener('click', function(event) {
+      if (event.target.closest('#side-nav') === null && event.target.closest('.menu-toggle') === null) {
+        toggleSidebar(false);
+      }
+      const block = event.target.closest('[data-media-section]');
+      if (block && block.dataset.mediaSection) {
+        lastMediaSection = block.dataset.mediaSection;
+      }
+    });
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        toggleSidebar(false);
+      }
+    });
+
+    switchTab('pretrade');
+    setBias('short');
+    await loadTradeRecords();
+    renderMedia('htf');
+    renderMedia('liquidity');
+    renderMedia('bias');
+    renderMedia('ideal');
+    renderMedia('real');
+
+    let loadedSelectedTrade = false;
+
+    const urlParams = new URLSearchParams(window.location.search || '');
+    const activeTradeIdFromQuery = urlParams.get('loadTradeId');
+    const activeTradeIdRaw = activeTradeIdFromQuery || localStorage.getItem(ACTIVE_TRADE_ID_KEY);
+    if (activeTradeIdRaw) {
+      try {
+        let activeTrade = null;
+
+        if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.getTrade) {
+          try {
+            const result = await FrontendAPI.getTrade(activeTradeIdRaw);
+            activeTrade = result && result.trade ? result.trade : null;
+          } catch (fetchErr) {
+            activeTrade = null;
+          }
+        }
+
+        if (!activeTrade) {
+          activeTrade = tradeRecords.find(t => String(t.id) === String(activeTradeIdRaw));
+        }
+
+        if (activeTrade) {
+          loadTradePayload(activeTrade);
+          loadedSelectedTrade = true;
+        }
+      } catch (err) {
+        console.error('Could not load selected trade', err);
+      }
+      localStorage.removeItem(ACTIVE_TRADE_ID_KEY);
+      if (activeTradeIdFromQuery && window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', 'index.html');
+      }
+    }
+
+    const selectedTradePayloadRaw = localStorage.getItem(SELECTED_TRADE_PAYLOAD_KEY);
+    if (selectedTradePayloadRaw) {
+      try {
+        const selectedTradePayload = JSON.parse(selectedTradePayloadRaw);
+        if (selectedTradePayload && typeof selectedTradePayload === 'object') {
+          const tradeId = String(selectedTradePayload.id != null ? selectedTradePayload.id : '');
+          const matchedTrade = tradeId ? tradeRecords.find(t => String(t.id) === tradeId) : null;
+
+          if (matchedTrade) {
+            loadTradePayload(Object.assign({}, matchedTrade, selectedTradePayload));
+            loadedSelectedTrade = true;
+          } else if (!loadedSelectedTrade) {
+            loadTradePayload(selectedTradePayload);
+            loadedSelectedTrade = true;
+          }
+        }
+      } catch (err) {
+        console.error('Could not load selected trade payload', err);
+      }
+      localStorage.removeItem(SELECTED_TRADE_PAYLOAD_KEY);
+    }
+
+    const activeTradeRaw = localStorage.getItem(ACTIVE_TRADE_KEY);
+    if (activeTradeRaw) {
+      localStorage.removeItem(ACTIVE_TRADE_KEY);
+    }
+
+    updateProgress();
+  }
+
+  initPage();
+</script>
+</body>
+</html>

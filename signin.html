@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In</title>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<script src="backend-status.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --blue: #5090e0;
+    --green: #52c77a;
+    --red: #f07060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 20% 20%, #13203a 0%, var(--bg) 45%), var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+
+  .card {
+    width: min(430px, 100%);
+    background: linear-gradient(180deg, rgba(24, 28, 34, 0.95), rgba(17, 20, 24, 0.95));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e7edf7;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.45;
+  }
+
+  .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #aab8cc;
+    margin-bottom: 14px;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: rgba(17, 20, 24, 0.7);
+  }
+
+  .mode-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .mode-btn {
+    width: 100%;
+    margin-top: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px;
+  }
+
+  .mode-btn.active {
+    border-color: #2b4f84;
+    background: linear-gradient(180deg, #204170, #163157);
+    color: #e5efff;
+  }
+
+  label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 10px 0 6px;
+  }
+
+  input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    color: var(--text);
+    padding: 11px 12px;
+    font-size: 13px;
+    outline: none;
+  }
+
+  input:focus { border-color: var(--blue); }
+
+  button {
+    width: 100%;
+    margin-top: 14px;
+    border: 1px solid #2b4f84;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #204170, #163157);
+    color: #e5efff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 11px;
+    cursor: pointer;
+  }
+
+  button:disabled { opacity: 0.6; cursor: wait; }
+
+  .message {
+    margin-top: 12px;
+    font-size: 12px;
+    min-height: 18px;
+  }
+
+  .ok { color: var(--green); }
+  .err { color: var(--red); }
+
+  .demo {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1 class="title">Sign In</h1>
+    <p class="subtitle">Single page sign-in with demo mode (env users) and API mode switch.</p>
+
+    <div id="mode-meta" class="meta"></div>
+
+    <div class="mode-row">
+      <button id="mode-local" class="mode-btn" type="button">Local Session</button>
+      <button id="mode-api" class="mode-btn" type="button">Connect Backend</button>
+    </div>
+
+    <form id="signin-form">
+      <label for="username">Username</label>
+      <input id="username" type="text" autocomplete="username" required/>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required/>
+
+      <button id="signin-btn" type="submit">Sign In</button>
+    </form>
+
+    <div id="message" class="message"></div>
+
+    <div class="demo">
+      Demo users:<br/>
+      yonous / yonous123<br/>
+      shashank / shashank123
+    </div>
+  </main>
+
+<script>
+  const env = window.APP_ENV || {};
+  const form = document.getElementById('signin-form');
+  const msg = document.getElementById('message');
+  const btn = document.getElementById('signin-btn');
+  const modeMeta = document.getElementById('mode-meta');
+  const localModeBtn = document.getElementById('mode-local');
+  const apiModeBtn = document.getElementById('mode-api');
+  const existingSession = window.FrontendAPI && FrontendAPI.getSession ? FrontendAPI.getSession() : null;
+
+  function getCurrentMode() {
+    if (window.FrontendAPI && FrontendAPI.getMode) {
+      return FrontendAPI.getMode();
+    }
+    return env.USE_API ? 'api' : 'local';
+  }
+
+  function updateModeUi() {
+    const mode = getCurrentMode();
+    localModeBtn.classList.toggle('active', mode === 'local');
+    apiModeBtn.classList.toggle('active', mode === 'api');
+
+    modeMeta.textContent = mode === 'api'
+      ? 'Mode: Backend API at ' + (env.API_BASE_URL || 'http://localhost:3000')
+      : 'Mode: Local session from APP_ENV.DEMO_USERS';
+  }
+
+  function sessionMatchesMode(session) {
+    if (!session || typeof session !== 'object') return false;
+    const mode = getCurrentMode();
+    if (mode === 'api') return session.mode === 'api';
+    return session.mode === 'demo' || session.mode === 'local';
+  }
+
+  if (sessionMatchesMode(existingSession)) {
+    window.location.href = 'index.html';
+  }
+
+  updateModeUi();
+
+  function setMessage(text, isError) {
+    msg.textContent = text;
+    msg.className = 'message ' + (isError ? 'err' : 'ok');
+  }
+
+  function saveSession(payload) {
+    if (window.FrontendAPI && FrontendAPI.setSession) {
+      FrontendAPI.setSession(payload);
+      return;
+    }
+
+    localStorage.setItem('auth_session', JSON.stringify(payload));
+  }
+
+  localModeBtn.addEventListener('click', function () {
+    try {
+      if (window.FrontendAPI && FrontendAPI.enableLocalMode) {
+        FrontendAPI.enableLocalMode();
+      }
+      updateModeUi();
+      setMessage('Switched to local session mode.', false);
+    } catch (error) {
+      setMessage(error.message || 'Could not switch mode.', true);
+    }
+  });
+
+  apiModeBtn.addEventListener('click', async function () {
+    localModeBtn.disabled = true;
+    apiModeBtn.disabled = true;
+
+    try {
+      if (window.FrontendAPI && FrontendAPI.enableApiMode) {
+        await FrontendAPI.enableApiMode();
+      }
+      updateModeUi();
+      setMessage('Backend is ready. API mode enabled.', false);
+    } catch (error) {
+      if (window.FrontendAPI && FrontendAPI.enableLocalMode) {
+        FrontendAPI.enableLocalMode();
+      }
+      updateModeUi();
+      const text = error && error.message ? error.message : 'Backend not ready';
+      alert('Backend not ready. Please start backend and MongoDB first.\n\nDetails: ' + text);
+      setMessage('Backend not ready. Stayed in local mode.', true);
+    } finally {
+      localModeBtn.disabled = false;
+      apiModeBtn.disabled = false;
+    }
+  });
+
+  form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    setMessage('', false);
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!username || !password) {
+      setMessage('Please enter username and password.', true);
+      return;
+    }
+
+    btn.disabled = true;
+
+    try {
+      const session = window.FrontendAPI && FrontendAPI.login
+        ? await FrontendAPI.login(username, password)
+        : null;
+
+      if (!session) {
+        throw new Error('Frontend API helper is not loaded');
+      }
+
+      saveSession(session);
+      setMessage('Sign in successful for ' + session.username + ' (' + session.userId + ')', false);
+      window.location.href = 'index.html';
+    } catch (error) {
+      setMessage(error.message || 'Sign in failed.', true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
