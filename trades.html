@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMC Trade List</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e242c;
+    --border2: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --blue: #5090e0;
+    --blue-bg: #0f1828;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+
+  .menu-toggle {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1101;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    background: rgba(17, 20, 24, 0.95);
+    color: #dbe5f2;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .side-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 10, 0.55);
+    z-index: 1098;
+    display: none;
+  }
+
+  .side-backdrop.open { display: block; }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, rgba(22, 27, 35, 0.98), rgba(14, 18, 24, 0.98));
+    border-right: 1px solid var(--border2);
+    padding: 56px 14px 14px;
+    z-index: 1099;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+  }
+
+  .side-nav.open { transform: translateX(0); }
+
+  .side-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #9fb0c8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .side-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    margin-bottom: 8px;
+    background: rgba(17, 20, 24, 0.86);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .side-link.active {
+    border-color: var(--blue);
+    color: #d7e6ff;
+    background: var(--blue-bg);
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .page-head {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 16px;
+  }
+
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e7edf7;
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: 1.2fr 0.7fr 0.8fr 0.8fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 10px 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  .btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 11px;
+    cursor: pointer;
+  }
+
+  .btn:hover { border-color: var(--blue); }
+
+  .status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .card {
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: rgba(17, 20, 24, 0.86);
+    padding: 12px;
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #d8e2f0;
+  }
+
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .kv { font-size: 12px; color: var(--muted); }
+  .kv b { color: var(--text); font-weight: 500; }
+
+  .note {
+    font-size: 12px;
+    color: var(--text);
+    border-left: 2px solid var(--border2);
+    padding-left: 8px;
+    margin-bottom: 8px;
+    line-height: 1.45;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .empty {
+    border: 1px dashed var(--border2);
+    border-radius: 12px;
+    color: var(--muted);
+    padding: 20px;
+    text-align: center;
+  }
+
+  @media (max-width: 860px) {
+    .filters {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .filters {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-toggle" type="button" onclick="toggleSidebar(true)">☰</button>
+<div id="side-backdrop" class="side-backdrop" onclick="toggleSidebar(false)"></div>
+<nav id="side-nav" class="side-nav">
+  <div class="side-title">Navigation</div>
+  <a class="side-link" href="index.html">Pre/Post Checklist</a>
+  <a class="side-link active" href="trades.html">List Of Trades</a>
+</nav>
+
+<div class="container">
+  <div class="page-head">
+    <div class="title">List Of Trades</div>
+    <div class="subtitle">Select any saved trade and load it into your checklist page.</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" type="button" onclick="refreshTrades()">Refresh</button>
+    <button class="btn" type="button" onclick="clearFilters()">Clear Filters</button>
+    <button class="btn" type="button" onclick="clearTrades()">Clear All</button>
+  </div>
+
+  <div class="filters">
+    <input class="field" id="filter-search" type="text" placeholder="Search notes, prices, date..." oninput="applyFilters()"/>
+    <select class="field" id="filter-bias" onchange="applyFilters()">
+      <option value="all">Bias: All</option>
+      <option value="long">Bias: Long</option>
+      <option value="short">Bias: Short</option>
+    </select>
+    <input class="field" id="filter-from" type="date" onchange="applyFilters()"/>
+    <input class="field" id="filter-to" type="date" onchange="applyFilters()"/>
+  </div>
+
+  <div class="status" id="trade-status">0 trades saved</div>
+  <div class="list" id="trade-list">
+    <div class="empty">No saved trades yet.</div>
+  </div>
+</div>
+
+<script>
+  const TRADE_STORAGE_KEY = 'smc_trade_records_v1';
+  const ACTIVE_TRADE_KEY = 'smc_active_trade_v1';
+  const tradeRecords = [];
+  let filteredIndexMap = [];
+
+  function toggleSidebar(open) {
+    const nav = document.getElementById('side-nav');
+    const backdrop = document.getElementById('side-backdrop');
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+  }
+
+  function loadTradeRecords() {
+    try {
+      const raw = localStorage.getItem(TRADE_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      tradeRecords.length = 0;
+      if (Array.isArray(parsed)) parsed.forEach(item => tradeRecords.push(item));
+    } catch (err) {
+      tradeRecords.length = 0;
+    }
+  }
+
+  function persistTradeRecords() {
+    localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify(tradeRecords));
+  }
+
+  function clearTrades() {
+    tradeRecords.length = 0;
+    persistTradeRecords();
+    renderTrades();
+  }
+
+  function removeTrade(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+    tradeRecords.splice(index, 1);
+    persistTradeRecords();
+    renderTrades();
+  }
+
+  function loadIntoChecklist(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+    const trade = tradeRecords[index];
+    if (!trade) return;
+    localStorage.setItem(ACTIVE_TRADE_KEY, JSON.stringify(trade));
+    window.location.href = 'index.html';
+  }
+
+  function clearFilters() {
+    document.getElementById('filter-search').value = '';
+    document.getElementById('filter-bias').value = 'all';
+    document.getElementById('filter-from').value = '';
+    document.getElementById('filter-to').value = '';
+    applyFilters();
+  }
+
+  function getFilteredTrades() {
+    const query = document.getElementById('filter-search').value.trim().toLowerCase();
+    const bias = document.getElementById('filter-bias').value;
+    const fromVal = document.getElementById('filter-from').value;
+    const toVal = document.getElementById('filter-to').value;
+
+    const fromTs = fromVal ? new Date(fromVal + 'T00:00:00').getTime() : null;
+    const toTs = toVal ? new Date(toVal + 'T23:59:59').getTime() : null;
+
+    filteredIndexMap = [];
+    const filtered = [];
+
+    tradeRecords.forEach((trade, index) => {
+      const createdTs = new Date(trade.createdAt || Date.now()).getTime();
+      const tradeBias = (trade.bias || '').toLowerCase();
+      const haystack = [
+        trade.createdAt || '',
+        tradeBias,
+        trade.notes && trade.notes.ideal ? trade.notes.ideal : '',
+        trade.notes && trade.notes.real ? trade.notes.real : '',
+        trade.prices && trade.prices.entry ? trade.prices.entry : '',
+        trade.prices && trade.prices.sl ? trade.prices.sl : '',
+        trade.prices && trade.prices.lrl ? trade.prices.lrl : ''
+      ].join(' ').toLowerCase();
+
+      if (bias !== 'all' && tradeBias !== bias) return;
+      if (fromTs !== null && createdTs < fromTs) return;
+      if (toTs !== null && createdTs > toTs) return;
+      if (query && !haystack.includes(query)) return;
+
+      filteredIndexMap.push(index);
+      filtered.push(trade);
+    });
+
+    return filtered;
+  }
+
+  function applyFilters() {
+    renderTrades();
+  }
+
+  function renderTrades() {
+    const status = document.getElementById('trade-status');
+    const list = document.getElementById('trade-list');
+    const filteredTrades = getFilteredTrades();
+    status.textContent = filteredTrades.length + ' shown / ' + tradeRecords.length + ' saved';
+
+    if (filteredTrades.length === 0) {
+      list.innerHTML = '<div class="empty">No trades match your filters.</div>';
+      return;
+    }
+
+    list.innerHTML = filteredTrades.map((trade, idx) => {
+      const at = new Date(trade.createdAt || Date.now()).toLocaleString();
+      const ideal = trade.notes && trade.notes.ideal ? trade.notes.ideal : 'No ideal execution note.';
+      const real = trade.notes && trade.notes.real ? trade.notes.real : 'No real execution note.';
+      const progress = trade.progress ? trade.progress.checked + '/' + trade.progress.total : '0/0';
+
+      return '<article class="card">'
+        + '<div class="top"><div class="time">' + at + '</div><div class="badge">' + (trade.bias || 'n/a') + '</div></div>'
+        + '<div class="meta">'
+        + '<div class="kv">Progress: <b>' + progress + '</b></div>'
+        + '<div class="kv">Entry: <b>' + ((trade.prices && trade.prices.entry) || '-') + '</b></div>'
+        + '<div class="kv">SL: <b>' + ((trade.prices && trade.prices.sl) || '-') + '</b></div>'
+        + '<div class="kv">LRL: <b>' + ((trade.prices && trade.prices.lrl) || '-') + '</b></div>'
+        + '</div>'
+        + '<div class="note">Ideal: ' + ideal + '</div>'
+        + '<div class="note">Real: ' + real + '</div>'
+        + '<div class="actions">'
+        + '<button class="btn" type="button" onclick="loadIntoChecklist(' + idx + ')">Load Trade</button>'
+        + '<button class="btn" type="button" onclick="removeTrade(' + idx + ')">Delete</button>'
+        + '</div>'
+        + '</article>';
+    }).join('');
+  }
+
+  function refreshTrades() {
+    loadTradeRecords();
+    renderTrades();
+  }
+
+  document.addEventListener('click', function(event) {
+    if (event.target.closest('#side-nav') === null && event.target.closest('.menu-toggle') === null) {
+      toggleSidebar(false);
+    }
+  });
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') toggleSidebar(false);
+  });
+
+  refreshTrades();
+</script>
+</body>
+</html>
