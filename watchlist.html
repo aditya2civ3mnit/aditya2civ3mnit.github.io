@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Watchlist</title>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<script src="toast.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e242c;
+    --border2: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --blue: #5090e0;
+    --blue-bg: #0f1828;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+
+  .menu-toggle {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1101;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    background: rgba(17, 20, 24, 0.95);
+    color: #dbe5f2;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .profile-shortcut {
+    position: fixed;
+    right: 14px;
+    top: 14px;
+    z-index: 1101;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    background: rgba(17, 20, 24, 0.95);
+    padding: 4px 10px 4px 4px;
+    color: #dbe5f2;
+    max-width: 170px;
+  }
+
+  .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #3866a5, #24487a);
+    border: 1px solid #3f5f8f;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5efff;
+  }
+
+  .profile-shortcut-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .side-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 10, 0.55);
+    z-index: 1098;
+    display: none;
+  }
+
+  .side-backdrop.open { display: block; }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, rgba(22, 27, 35, 0.98), rgba(14, 18, 24, 0.98));
+    border-right: 1px solid var(--border2);
+    padding: 56px 14px 14px;
+    z-index: 1099;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .side-nav.open { transform: translateX(0); }
+
+  .side-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #9fb0c8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .side-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    margin-bottom: 8px;
+    background: rgba(17, 20, 24, 0.86);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .side-link.active {
+    border-color: var(--blue);
+    color: #d7e6ff;
+    background: var(--blue-bg);
+  }
+
+  .side-main {
+    display: block;
+  }
+
+  .side-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border2);
+    padding-top: 12px;
+  }
+
+  .side-signout-btn {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    background: rgba(32, 18, 22, 0.82);
+    color: #f1beca;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .side-signout-btn:hover {
+    border-color: #8b3a4a;
+    color: #ffd7df;
+  }
+
+  .side-support-link {
+    display: block;
+    margin-top: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: #9ec3ff;
+    background: rgba(14, 23, 35, 0.84);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .page-head {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 16px;
+  }
+
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e7edf7;
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    border-color: var(--blue);
+  }
+
+  .status {
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .card {
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: rgba(17, 20, 24, 0.8);
+    padding: 12px;
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #dce7f6;
+    letter-spacing: 0.04em;
+  }
+
+  .badge {
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 10px;
+    color: #9fb0c8;
+  }
+
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .kv {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .empty {
+    border: 1px dashed var(--border2);
+    border-radius: 12px;
+    color: var(--muted);
+    padding: 18px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+
+  @media (max-width: 700px) {
+    .meta {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-toggle" type="button" onclick="toggleSidebar(true)">☰</button>
+<a class="profile-shortcut" href="profile.html" aria-label="Open profile settings">
+  <span class="profile-avatar" id="profile-shortcut-avatar">A</span>
+  <span class="profile-shortcut-name" id="profile-shortcut-name">Profile</span>
+</a>
+<div id="side-backdrop" class="side-backdrop" onclick="toggleSidebar(false)"></div>
+<nav id="side-nav" class="side-nav">
+  <div class="side-main">
+    <div class="side-title">Navigation</div>
+    <a class="side-link" href="index.html">Pre/Post Checklist</a>
+    <a class="side-link" href="setups.html">Setup Canvas</a>
+    <a class="side-link" href="trades.html">List Of Trades</a>
+    <a class="side-link active" href="watchlist.html">Watchlist</a>
+  </div>
+  <div class="side-footer">
+    <button class="side-signout-btn" type="button" onclick="signOutFromSidebar()">Sign Out</button>
+    <a class="side-support-link" href="mailto:support@example.com">Contact Support</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-head">
+    <div class="title">Watchlist</div>
+    <div class="subtitle">Load watchlist trade into checklist and then save to move it into List Of Trades.</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" type="button" onclick="refreshWatchlist()">Refresh</button>
+    <button class="btn" type="button" onclick="clearWatchlist()">Clear All</button>
+  </div>
+
+  <div class="status" id="watchlist-status">0 watchlist trades</div>
+  <div class="list" id="watchlist-list">
+    <div class="empty">No watchlist items yet.</div>
+  </div>
+</div>
+
+<script>
+  const WATCHLIST_STORAGE_KEY = 'smc_watchlist_records_v1';
+  const SELECTED_TRADE_PAYLOAD_KEY = 'smc_selected_trade_payload_v1';
+  const SOURCE_WATCHLIST_ID_KEY = 'smc_source_watchlist_id_v1';
+  const watchlistRecords = [];
+
+  function toggleSidebar(open) {
+    const nav = document.getElementById('side-nav');
+    const backdrop = document.getElementById('side-backdrop');
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+  }
+
+  function getSidebarSession() {
+    if (window.FrontendAPI && FrontendAPI.getSession) {
+      return FrontendAPI.getSession() || null;
+    }
+
+    try {
+      const raw = localStorage.getItem('auth_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function initSidebarProfile() {
+    const profile = document.getElementById('profile-shortcut-name');
+    const avatar = document.getElementById('profile-shortcut-avatar');
+    if (!profile || !avatar) return;
+    const session = getSidebarSession();
+    const label = session && (session.name || session.username || session.userId)
+      ? String(session.name || session.username || session.userId)
+      : 'Trader';
+    profile.textContent = label;
+    avatar.textContent = String(label).trim().slice(0, 1).toUpperCase() || 'A';
+  }
+
+  async function signOutFromSidebar() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.logout) {
+        await FrontendAPI.logout();
+      } else {
+        localStorage.removeItem('auth_session');
+      }
+    } catch (err) {
+      localStorage.removeItem('auth_session');
+    }
+
+    window.location.replace('signin.html');
+  }
+
+  async function loadWatchlistRecords() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.listWatchlist) {
+        const result = await FrontendAPI.listWatchlist();
+        const records = result && Array.isArray(result.watchlist) ? result.watchlist : [];
+        watchlistRecords.length = 0;
+        records.forEach(function (item) { watchlistRecords.push(item); });
+        return;
+      }
+
+      const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      watchlistRecords.length = 0;
+      if (Array.isArray(parsed)) parsed.forEach(function (item) { watchlistRecords.push(item); });
+    } catch (err) {
+      console.error('Failed to load watchlist', err);
+      watchlistRecords.length = 0;
+    }
+  }
+
+  function persistWatchlistRecords() {
+    if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      return;
+    }
+
+    localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlistRecords));
+  }
+
+  function renderWatchlist() {
+    const list = document.getElementById('watchlist-list');
+    const status = document.getElementById('watchlist-status');
+    if (!list || !status) return;
+
+    status.textContent = watchlistRecords.length + ' watchlist trade(s)';
+
+    if (watchlistRecords.length === 0) {
+      list.innerHTML = '<div class="empty">No watchlist items yet.</div>';
+      return;
+    }
+
+    list.innerHTML = watchlistRecords.map(function (item, idx) {
+      const createdAt = new Date(item.createdAt || Date.now()).toLocaleString();
+      const tradeName = item.tradeName || 'Untitled watchlist trade';
+      const setupName = item.setupName || (item.setupSnapshot && item.setupSnapshot.name) || 'Unknown setup';
+      const instrument = item.instrument || '—';
+      const tradeTime = item.tradeTimestamp || '—';
+      return ''
+        + '<article class="card">'
+        + '<div class="top"><div><div class="time">' + escapeHtml(tradeName) + '</div></div><div class="badge">' + createdAt + '</div></div>'
+        + '<div class="meta">'
+        + '<div class="kv">Setup: <b>' + escapeHtml(setupName) + '</b></div>'
+        + '<div class="kv">Instrument: <b>' + escapeHtml(instrument) + '</b></div>'
+        + '<div class="kv">Trade Time: <b>' + escapeHtml(tradeTime) + '</b></div>'
+        + '<div class="kv">Bias: <b>' + escapeHtml(String(item.bias || 'short')) + '</b></div>'
+        + '</div>'
+        + '<div class="actions">'
+        + '<button class="btn" type="button" onclick="loadIntoChecklist(' + idx + ')">Load Trade</button>'
+        + '<button class="btn" type="button" onclick="removeWatchlistItem(' + idx + ')">Delete</button>'
+        + '</div>'
+        + '</article>';
+    }).join('');
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+  }
+
+  function loadIntoChecklist(index) {
+    const item = watchlistRecords[index];
+    if (!item) return;
+
+    const id = String(item.id || '').trim();
+    const payload = Object.assign({}, item, {
+      __fromWatchlist: true,
+      sourceWatchlistId: id
+    });
+
+    localStorage.setItem(SELECTED_TRADE_PAYLOAD_KEY, JSON.stringify(payload));
+
+    if (id) {
+      localStorage.setItem(SOURCE_WATCHLIST_ID_KEY, id);
+      window.location.href = 'index.html?loadWatchlistId=' + encodeURIComponent(id);
+      return;
+    }
+
+    window.location.href = 'index.html';
+  }
+
+  async function removeWatchlistItem(index) {
+    const item = watchlistRecords[index];
+    if (!item) return;
+
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.deleteWatchlist) {
+        await FrontendAPI.deleteWatchlist(item.id);
+      }
+
+      watchlistRecords.splice(index, 1);
+      persistWatchlistRecords();
+      renderWatchlist();
+    } catch (err) {
+      AppToast.error('Failed to delete watchlist item: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  async function clearWatchlist() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.deleteWatchlist) {
+        const ids = watchlistRecords.map(function (item) { return item.id; }).filter(Boolean);
+        for (const id of ids) {
+          await FrontendAPI.deleteWatchlist(id);
+        }
+      }
+
+      watchlistRecords.length = 0;
+      persistWatchlistRecords();
+      renderWatchlist();
+    } catch (err) {
+      AppToast.error('Failed to clear watchlist: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  async function refreshWatchlist() {
+    await loadWatchlistRecords();
+    renderWatchlist();
+  }
+
+  async function initPage() {
+    initSidebarProfile();
+    document.addEventListener('click', function (event) {
+      if (event.target.closest('#side-nav') === null && event.target.closest('.menu-toggle') === null) {
+        toggleSidebar(false);
+      }
+    });
+
+    await refreshWatchlist();
+  }
+
+  initPage();
+</script>
+</body>
+</html>

@@ -1,0 +1,3827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMC Pre-Trade Checklist</title>
+<script>
+  (function() {
+    var session = localStorage.getItem('auth_session');
+    if (!session) {
+      window.location.replace('signin.html');
+    }
+  })();
+</script>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<script src="toast.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e242c;
+    --border2: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --dim: #2a3040;
+
+    --purple: #7c6ff7;
+    --purple-bg: #1a1730;
+    --purple-border: #2e2860;
+
+    --coral: #f07060;
+    --coral-bg: #1f1618;
+    --coral-border: #3d2020;
+
+    --teal: #2dd4a0;
+    --teal-bg: #0f1e1a;
+    --teal-border: #1a3830;
+
+    --green: #52c77a;
+    --green-bg: #0f1e14;
+    --green-border: #1a3a24;
+
+    --amber: #f0a050;
+    --amber-bg: #1e1608;
+    --amber-border: #3a2c10;
+
+    --blue: #5090e0;
+    --blue-bg: #0f1828;
+    --blue-border: #1a2e50;
+
+    --gray: #606878;
+    --gray-bg: #141820;
+    --gray-border: #202830;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .container {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .checklist-board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    align-items: start;
+  }
+
+  .board-col {
+    min-width: 0;
+  }
+
+  .section-block {
+    margin-bottom: 16px;
+    padding: 16px;
+    background:
+      radial-gradient(circle at top left, rgba(80, 144, 224, 0.06), transparent 34%),
+      linear-gradient(180deg, rgba(24,28,34,0.9), rgba(14,17,22,0.96));
+    border: 1px solid rgba(37, 44, 54, 0.95);
+    border-radius: 18px;
+    box-shadow:
+      0 18px 36px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-block::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 22%);
+    pointer-events: none;
+  }
+
+  .section-block .section-label {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding: 0 2px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #9eacbf;
+  }
+
+  header {
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 20px;
+  }
+
+  .menu-toggle {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1101;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    background: rgba(17, 20, 24, 0.95);
+    color: #dbe5f2;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .profile-shortcut {
+    position: fixed;
+    right: 14px;
+    top: 14px;
+    z-index: 1101;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    background: rgba(17, 20, 24, 0.95);
+    padding: 4px 10px 4px 4px;
+    color: #dbe5f2;
+    max-width: 170px;
+  }
+
+  .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #3866a5, #24487a);
+    border: 1px solid #3f5f8f;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5efff;
+  }
+
+  .profile-shortcut-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .side-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 10, 0.55);
+    z-index: 1098;
+    display: none;
+  }
+
+  .side-backdrop.open {
+    display: block;
+  }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, rgba(22, 27, 35, 0.98), rgba(14, 18, 24, 0.98));
+    border-right: 1px solid var(--border2);
+    padding: 56px 14px 14px;
+    z-index: 1099;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .side-nav.open {
+    transform: translateX(0);
+  }
+
+  .side-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #9fb0c8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .side-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    margin-bottom: 8px;
+    background: rgba(17, 20, 24, 0.86);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .side-link.active {
+    border-color: var(--blue);
+    color: #d7e6ff;
+    background: var(--blue-bg);
+  }
+
+  .side-main {
+    display: block;
+  }
+
+  .side-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border2);
+    padding-top: 12px;
+  }
+
+  .side-signout-btn {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    background: rgba(32, 18, 22, 0.82);
+    color: #f1beca;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .side-signout-btn:hover {
+    border-color: #8b3a4a;
+    color: #ffd7df;
+  }
+
+  .side-support-link {
+    display: block;
+    margin-top: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: #9ec3ff;
+    background: rgba(14, 23, 35, 0.84);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .side-support-link:hover {
+    border-color: #4a74ab;
+    color: #c8deff;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    color: var(--text);
+    border-color: var(--gray);
+  }
+
+  .tab-btn.active {
+    color: #dce6f3;
+    border-color: var(--blue);
+    background: var(--blue-bg);
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  .panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #a8b6cc;
+    margin-bottom: 12px;
+    padding: 0 2px;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #e8edf3;
+    text-transform: uppercase;
+  }
+
+  .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 20px;
+  }
+
+  .setup-status {
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9bc3ff;
+  }
+
+  .setup-required {
+    margin: 14px 0 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    display: none;
+  }
+
+  .setup-required.visible {
+    display: block;
+  }
+
+  .setup-required-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e8edf3;
+    margin-bottom: 6px;
+  }
+
+  .setup-required-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .setup-required-link {
+    display: inline-block;
+    text-decoration: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #c8d0da;
+    background: var(--surface2);
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin-bottom: 26px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .progress-label span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .progress-label .count {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 10px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 4px;
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+
+  /* Check item */
+  .check-item,
+  .comment-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 15px 16px 15px 14px;
+    background:
+      linear-gradient(180deg, rgba(19, 23, 29, 0.95), rgba(14, 18, 24, 0.96));
+    border: 1px solid rgba(37, 44, 54, 0.95);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+
+  .check-item:hover {
+    border-color: rgba(80, 144, 224, 0.38);
+    background: linear-gradient(180deg, rgba(24, 30, 38, 0.96), rgba(14, 18, 24, 0.98));
+  }
+
+  .check-item:active {
+    transform: scale(0.995);
+  }
+
+  .check-item.checked {
+    border-color: var(--item-color, var(--green));
+    background: var(--item-bg, var(--green-bg));
+  }
+
+  .check-item::before,
+  .comment-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, rgba(80, 144, 224, 0.82), rgba(80, 144, 224, 0.08));
+    opacity: 0.75;
+  }
+
+  .check-item.checked::before {
+    background: linear-gradient(180deg, var(--item-color, var(--green)), rgba(255,255,255,0.08));
+  }
+
+  /* Checkbox box */
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 1.5px solid rgba(80, 144, 224, 0.18);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: rgba(11, 14, 18, 0.95);
+  }
+
+  .check-item.checked .checkbox {
+    background: var(--item-color, var(--green));
+    border-color: var(--item-color, var(--green));
+  }
+
+  .checkbox svg {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .check-item.checked .checkbox svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .item-content {
+    flex: 1;
+  }
+
+  .item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e3eaf4;
+    line-height: 1.35;
+    transition: color 0.2s;
+  }
+
+  .check-item.checked .item-title {
+    color: var(--item-color, var(--green));
+  }
+
+  .item-desc {
+    font-size: 12px;
+    color: #657083;
+    margin-top: 4px;
+    line-height: 1.45;
+    transition: color 0.2s;
+  }
+
+  .check-item.checked .item-desc {
+    color: var(--muted);
+  }
+
+  .check-item.nested,
+  .comment-item.nested {
+    margin-left: 14px;
+    border-left: 2px solid rgba(80, 144, 224, 0.18);
+  }
+
+  .comment-item {
+    cursor: default;
+    user-select: text;
+    border-style: dashed;
+    border-color: rgba(96, 104, 120, 0.65);
+    background: linear-gradient(180deg, rgba(16, 19, 24, 0.9), rgba(11, 14, 18, 0.92));
+  }
+
+  .comment-item::before {
+    background: linear-gradient(180deg, rgba(96, 104, 120, 0.92), rgba(96, 104, 120, 0.14));
+  }
+
+  .node-comment-input {
+    width: 100%;
+    margin-top: 8px;
+    min-height: 74px;
+    resize: vertical;
+    border: 1px solid rgba(37, 44, 54, 0.95);
+    border-radius: 10px;
+    background: rgba(11, 14, 18, 0.92);
+    color: var(--text);
+    padding: 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .node-comment-input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(80, 144, 224, 0.14);
+  }
+
+  .condition-node {
+    padding: 14px;
+    background: rgba(17, 20, 24, 0.9);
+    border: 1px dashed rgba(80, 144, 224, 0.3);
+    border-radius: 12px;
+    margin-bottom: 0;
+  }
+
+  .item-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--item-color, var(--green));
+    background: var(--item-bg, var(--green-bg));
+    border: 1px solid var(--item-border, var(--green-border));
+    padding: 3px 8px;
+    border-radius: 999px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .node-children {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .section-items-row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(290px, 1fr);
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .section-items-row .check-item,
+  .section-items-row .comment-item {
+    min-height: 112px;
+  }
+
+  .branch-wrap {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    background: rgba(10, 12, 15, 0.5);
+  }
+
+  .branch-switch-layout {
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .branch-switch-nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  .branch-switch-btn {
+    border: 1px solid var(--border2);
+    background: rgba(17, 20, 24, 0.9);
+    color: #8fa1ba;
+    border-radius: 8px;
+    padding: 8px 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .branch-switch-btn.active {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+    color: #cfe0fb;
+  }
+
+  .branch-pane {
+    display: none;
+  }
+
+  .branch-pane.active {
+    display: block;
+  }
+
+  .branch-switch-content {
+    display: none;
+  }
+
+  .branch-switch-content.active {
+    display: block;
+  }
+
+  .branch-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9fb0c8;
+    margin-bottom: 8px;
+  }
+
+  .section-direction-switch {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .section-direction-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: rgba(15, 20, 28, 0.9);
+    color: #8fa1ba;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .section-direction-btn.active {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+    color: #cfe0fb;
+  }
+
+  .section-direction-btn[data-branch="then"].active {
+    background: var(--coral-bg);
+    border-color: var(--coral);
+    color: var(--coral);
+  }
+
+  .section-direction-btn[data-branch="else"].active {
+    background: var(--teal-bg);
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  .section-direction-pane {
+    display: none;
+  }
+
+  .section-direction-pane.active {
+    display: block;
+  }
+
+  @media (max-width: 760px) {
+    .branch-switch-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .branch-switch-nav {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .section-items-row {
+      grid-auto-columns: minmax(250px, 1fr);
+    }
+  }
+
+  /* Bias selector */
+  .bias-selector {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    margin-bottom: 10px;
+  }
+
+  .bias-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .bias-btn:hover {
+    border-color: var(--gray);
+    color: var(--text);
+  }
+
+  .bias-btn.active-short {
+    background: var(--coral-bg);
+    border-color: var(--coral);
+    color: var(--coral);
+  }
+
+  .bias-btn.active-long {
+    background: var(--teal-bg);
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* Trade details input row */
+  .trade-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+  }
+
+  .input-group label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .input-group input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 9px 10px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-group input:focus {
+    border-color: var(--blue);
+  }
+
+  .input-group input::placeholder {
+    color: var(--dim);
+  }
+
+  /* RR display */
+  .rr-display {
+    background: var(--blue-bg);
+    border: 1px solid var(--blue-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .rr-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .rr-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--blue);
+  }
+
+  .tp-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  /* Ready banner */
+  .ready-banner {
+    margin-top: 28px;
+    padding: 18px 20px;
+    background: var(--green-bg);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .ready-banner.visible {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .ready-banner .ready-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .ready-banner .ready-sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Not ready */
+  .not-ready-banner {
+    margin-top: 28px;
+    padding: 14px 20px;
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .not-ready-banner.visible {
+    display: block;
+  }
+
+  .not-ready-banner .nr-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Reset button */
+  .reset-btn {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--gray);
+    color: var(--text);
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* Timestamp */
+  .timestamp {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  /* Media uploads */
+  .media-wrap {
+    margin-top: 6px;
+    padding: 14px;
+    background: rgba(17, 20, 24, 0.72);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+  }
+
+  .replay-note {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    background: rgba(17, 20, 24, 0.85);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 10px 12px;
+    outline: none;
+    margin-bottom: 10px;
+  }
+
+  .replay-note:focus {
+    border-color: var(--blue);
+  }
+
+  .replay-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .replay-field {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: rgba(17, 20, 24, 0.85);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 10px 11px;
+    outline: none;
+  }
+
+  .replay-field:focus {
+    border-color: var(--blue);
+  }
+
+  .fab-stack {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    display: grid;
+    gap: 8px;
+    z-index: 1102;
+  }
+
+  .fab-btn {
+    border: 1px solid var(--blue-border);
+    background: linear-gradient(180deg, #1a2d4c, #11203a);
+    color: #dbe9ff;
+    border-radius: 10px;
+    min-width: 122px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.38);
+  }
+
+
+  .risk-tool {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: min(320px, calc(100vw - 32px));
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(21, 26, 33, 0.95), rgba(12, 16, 22, 0.98));
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42);
+    z-index: 1101;
+    overflow: hidden;
+  }
+
+  .risk-tool-toggle {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--border2);
+    background: rgba(80, 144, 224, 0.09);
+    color: #dce8ff;
+    padding: 9px 11px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .risk-tool-body {
+    display: none;
+    padding: 10px;
+  }
+
+  .risk-tool.open .risk-tool-body {
+    display: block;
+    animation: fadein 0.2s ease;
+  }
+
+  .risk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .risk-field {
+    display: grid;
+    gap: 5px;
+  }
+
+  .risk-field.full {
+    grid-column: 1 / -1;
+  }
+
+  .risk-field label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .risk-field input,
+  .risk-field select {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    background: rgba(10, 14, 19, 0.9);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 8px 9px;
+    outline: none;
+  }
+
+  .risk-field input:focus,
+  .risk-field select:focus {
+    border-color: var(--blue);
+  }
+
+  .risk-mini-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .risk-copy-btn {
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    background: rgba(17, 20, 24, 0.9);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 9px;
+    cursor: pointer;
+  }
+
+  .risk-copy-btn:hover {
+    border-color: var(--blue);
+    color: #e6eeff;
+  }
+
+  .risk-status {
+    font-size: 10px;
+    color: #9bb2d0;
+    min-height: 14px;
+  }
+
+  .risk-status.warn {
+    color: var(--amber);
+  }
+
+  .risk-output {
+    margin-top: 8px;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: rgba(11, 16, 22, 0.92);
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .risk-kpi {
+    border: 1px solid rgba(37, 44, 54, 0.8);
+    border-radius: 7px;
+    padding: 6px;
+    background: rgba(17, 20, 24, 0.72);
+  }
+
+  .risk-kpi-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .risk-kpi-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    margin-top: 2px;
+    color: #dce8ff;
+  }
+
+  .risk-kpi-value.primary {
+    color: #88c2ff;
+    font-weight: 600;
+  }
+
+
+  .media-tools {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .media-btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .media-btn:hover {
+    border-color: var(--blue);
+    color: #e8edf3;
+  }
+
+  .media-btn.clear {
+    color: var(--muted);
+  }
+
+  .media-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .media-hint {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: -4px;
+    margin-bottom: 10px;
+  }
+
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .media-card {
+    position: relative;
+    border: 1px solid var(--border2);
+    background: #0d1015;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .media-uploaded-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(80, 144, 224, 0.4);
+    background: rgba(14, 28, 46, 0.9);
+    color: #9bc3ff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .media-card img,
+  .media-card video {
+    width: 100%;
+    height: 105px;
+    object-fit: cover;
+    display: block;
+    background: #0a0c0f;
+  }
+
+  .media-meta {
+    padding: 7px 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .media-name {
+    font-size: 11px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .media-size {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .remove-media {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    color: #f5f8ff;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .empty-media {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 8px 2px;
+  }
+
+  @media (max-width: 520px) {
+    .fab-stack {
+      right: 12px;
+      bottom: 12px;
+    }
+
+    .risk-tool {
+      right: 12px;
+      bottom: 62px;
+      width: min(320px, calc(100vw - 24px));
+    }
+
+    .fab-btn {
+      min-width: 108px;
+      padding: 9px 10px;
+      font-size: 9px;
+    }
+
+    .media-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1280px) {
+    .container {
+      max-width: 980px;
+    }
+
+    .checklist-board {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .trade-inputs {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .container {
+      max-width: 700px;
+    }
+
+    .checklist-board {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+  }
+
+  @media (max-width: 980px) {
+    body {
+      padding: 24px 12px 48px;
+    }
+
+    header {
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+    }
+
+    .subtitle {
+      margin-left: 0;
+      line-height: 1.4;
+    }
+
+    .tabs {
+      flex-direction: column;
+    }
+
+    .tab-btn {
+      width: 100%;
+    }
+
+    .checklist-board {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .board-col {
+      display: grid;
+      gap: 12px;
+    }
+
+    .section-block {
+      padding: 14px;
+      border-radius: 16px;
+    }
+
+    .trade-inputs {
+      grid-template-columns: 1fr;
+    }
+
+    .rr-display {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .rr-display > div {
+      width: 100%;
+      text-align: left !important;
+    }
+
+    .replay-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .media-wrap {
+      padding: 12px;
+    }
+
+    .media-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fab-stack {
+      right: 12px;
+      bottom: 12px;
+    }
+
+    .risk-tool {
+      right: 12px;
+      bottom: 62px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    body {
+      padding: 18px 10px 40px;
+      font-size: 13px;
+    }
+
+    .container {
+      max-width: 100%;
+    }
+
+    .header-top {
+      gap: 10px;
+    }
+
+    h1 {
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .subtitle,
+    .setup-status,
+    .section-label,
+    .panel-title {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+    }
+
+    .progress-wrap {
+      padding: 12px;
+      margin-bottom: 18px;
+    }
+
+    .progress-label {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .section-block {
+      padding: 12px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+    }
+
+    .check-item {
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .item-title {
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .item-desc {
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .bias-selector {
+      flex-direction: column;
+    }
+
+    .trade-inputs {
+      gap: 8px;
+    }
+
+    .input-group input,
+    .replay-field,
+    .replay-note {
+      font-size: 12px;
+    }
+
+    .rr-display {
+      padding: 12px;
+    }
+
+    .media-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .media-card img,
+    .media-card video {
+      height: 140px;
+    }
+
+    .replay-grid {
+      gap: 8px;
+    }
+
+    .fab-stack {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      grid-template-columns: 1fr;
+    }
+
+    .risk-tool {
+      left: auto;
+      right: 10px;
+      width: min(320px, calc(100vw - 20px));
+      bottom: 74px;
+    }
+
+    .risk-grid,
+    .risk-output {
+      grid-template-columns: 1fr;
+    }
+
+    .fab-btn {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-toggle" type="button" onclick="toggleSidebar(true)">☰</button>
+<a class="profile-shortcut" href="profile.html" aria-label="Open profile settings">
+  <span class="profile-avatar" id="profile-shortcut-avatar">A</span>
+  <span class="profile-shortcut-name" id="profile-shortcut-name">Profile</span>
+</a>
+<div id="side-backdrop" class="side-backdrop" onclick="toggleSidebar(false)"></div>
+<nav id="side-nav" class="side-nav">
+  <div class="side-main">
+    <div class="side-title">Navigation</div>
+    <a class="side-link active" href="index.html">Pre/Post Checklist</a>
+    <a class="side-link" href="setups.html">Setup Canvas</a>
+    <a class="side-link" href="trades.html">List Of Trades</a>
+    <a class="side-link" href="watchlist.html">Watchlist</a>
+  </div>
+  <div class="side-footer">
+    <button class="side-signout-btn" type="button" onclick="signOutFromSidebar()">Sign Out</button>
+    <a class="side-support-link" href="mailto:support@example.com">Contact Support</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <header>
+    <div class="header-top">
+      <div class="logo-dot"></div>
+      <h1>Pre-Trade Checklist</h1>
+    </div>
+    <div class="subtitle">Plan the trade, Trade the plan</div>
+    <div class="setup-status" id="setup-status">No setup loaded</div>
+    <div id="setup-required" class="setup-required">
+      <div class="setup-required-title">Create Your First Setup</div>
+      <div class="setup-required-sub">No default setup found. Create a setup and mark it as default to use this checklist.</div>
+      <a class="setup-required-link" href="setups.html">Go To Setup Canvas</a>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-pretrade" type="button" onclick="switchTab('pretrade')">Pre-Trade Checklist</button>
+    <button class="tab-btn" id="tab-btn-posttrade" type="button" onclick="switchTab('posttrade')">Post-Trade Replay</button>
+  </div>
+
+  <section id="tab-pretrade" class="tab-panel active">
+  <div class="panel-title">Pre-Trade Checklist</div>
+
+  <section class="section-block" style="margin-bottom: 18px;">
+    <div class="section-label">00 · Trade Name</div>
+    <div class="trade-inputs" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="input-group">
+        <label>Trade Name / Setup Label</label>
+        <input type="text" id="trade-name" placeholder="XAUUSD short at 7:30 AM"/>
+      </div>
+      <div class="input-group">
+        <label>Instrument</label>
+        <input type="text" id="trade-instrument" list="instrument-options" placeholder="Type or pick instrument"/>
+        <datalist id="instrument-options">
+          <option value="XAUUSD"></option>
+          <option value="EURUSD"></option>
+          <option value="GBPUSD"></option>
+          <option value="USDJPY"></option>
+          <option value="BTCUSD"></option>
+          <option value="NAS100"></option>
+        </datalist>
+      </div>
+      <div class="input-group">
+        <label>Trade Timestamp</label>
+        <input type="datetime-local" id="trade-timestamp"/>
+      </div>
+    </div>
+  </section>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Conditions met</span>
+      <span class="count"><span id="checked-count">0</span> / <span id="total-count">0</span></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="checklist-board">
+    <div class="board-col">
+      <!-- SECTION 1: HTF Setup -->
+      <section class="section-block" data-media-section="htf">
+        <div class="section-label">01 · Higher Timeframe Setup</div>
+
+        <div class="check-item" data-color="purple" data-id="htf-poi" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">HTF</div>
+            <div class="item-title">Price has tapped a HTF POI</div>
+            <div class="item-desc">Order Block (OB) or Fair Value Gap (FVG) on the higher timeframe has been reached</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="purple" data-id="htf-reaction" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">HTF</div>
+            <div class="item-title">Price is reacting to the POI (not just touching)</div>
+            <div class="item-desc">Look for rejection candles, wicks, or displacement away from the zone</div>
+          </div>
+        </div>
+
+        <div class="media-wrap">
+          <div class="media-tools">
+            <button class="media-btn" type="button" onclick="openMediaPicker('media-input-htf')">+ Add trade media</button>
+            <button class="media-btn clear" type="button" onclick="clearMedia('htf')">Clear media</button>
+          </div>
+          <input id="media-input-htf" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'htf')"/>
+          <div class="media-status" id="media-status-htf">0 files attached</div>
+          <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+          <div class="media-grid" id="media-grid-htf">
+            <div class="empty-media">No media attached yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: Liquidity -->
+      <section class="section-block" data-media-section="liquidity">
+        <div class="section-label">02 · Liquidity Sweep</div>
+
+        <div class="check-item" data-color="purple" data-id="sweep" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">Liquidity</div>
+            <div class="item-title">A liquidity pool has been swept</div>
+            <div class="item-desc">Buy-side (BSL) swept for shorts · Sell-side (SSL) swept for longs</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="purple" data-id="sweep-reaction" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--purple);--item-bg:var(--purple-bg);--item-border:var(--purple-border)">Liquidity</div>
+            <div class="item-title">Price has reacted to the sweep</div>
+            <div class="item-desc">Sharp reversal or strong close back inside range after the sweep wick</div>
+          </div>
+        </div>
+
+        <div class="media-wrap">
+          <div class="media-tools">
+            <button class="media-btn" type="button" onclick="openMediaPicker('media-input-liquidity')">+ Add trade media</button>
+            <button class="media-btn clear" type="button" onclick="clearMedia('liquidity')">Clear media</button>
+          </div>
+          <input id="media-input-liquidity" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, 'liquidity')"/>
+          <div class="media-status" id="media-status-liquidity">0 files attached</div>
+          <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+          <div class="media-grid" id="media-grid-liquidity">
+            <div class="empty-media">No media attached yet.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+      <!-- SECTION 4: Entry & RR -->
+      <section class="section-block">
+        <div class="section-label">04 · Entry Levels & Take Profit</div>
+
+        <div class="trade-inputs">
+          <div class="input-group">
+            <label>Entry</label>
+            <input type="number" id="entry" placeholder="0.00" oninput="calcRR()" step="any"/>
+          </div>
+          <div class="input-group">
+            <label>Stop Loss</label>
+            <input type="number" id="sl" placeholder="0.00" oninput="calcRR()" step="any"/>
+          </div>
+          <div class="input-group">
+            <label>Nearest LRL</label>
+            <input type="number" id="lrl" placeholder="0.00" oninput="calcRR()" step="any"/>
+          </div>
+        </div>
+
+        <div class="rr-display" id="rr-display" style="display:none">
+          <div>
+            <div class="rr-label">Take Profit (1:2 RR)</div>
+            <div class="rr-value" id="rr-tp">—</div>
+          </div>
+          <div style="text-align:center">
+            <div class="rr-label">Nearest LRL</div>
+            <div class="rr-value" id="rr-lrl" style="color:var(--amber)">—</div>
+          </div>
+          <div style="text-align:right">
+            <div class="rr-label">Use TP</div>
+            <div class="tp-value" id="rr-use">—</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="green" data-id="tp-set" onclick="toggle(this)" style="margin-top:8px">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--green);--item-bg:var(--green-bg);--item-border:var(--green-border)">Take Profit</div>
+            <div class="item-title">TP set at 1:2 RR or nearest LRL (whichever is closer)</div>
+            <div class="item-desc">If a major LRL sits before your 2R target, that LRL is your TP</div>
+          </div>
+        </div>
+
+        <div class="check-item" data-color="blue" data-id="be-plan" onclick="toggle(this)">
+          <div class="checkbox">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-tag" style="--item-color:var(--blue);--item-bg:var(--blue-bg);--item-border:var(--blue-border)">Risk Mgmt</div>
+            <div class="item-title">Plan to move SL to breakeven at +1R</div>
+            <div class="item-desc">Once price moves 1R in your favour, SL moves to entry — trade becomes risk-free</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    </div>
+  </div>
+
+  <!-- Result banners -->
+  <div class="ready-banner" id="ready-banner">
+    <div class="ready-title">✓ Setup Confirmed — Clear to Execute</div>
+    <div class="ready-sub">All conditions met. Enter at the FVG with your planned size.</div>
+  </div>
+
+  <div class="not-ready-banner" id="not-ready-banner">
+    <div class="nr-title">⚠ Incomplete — Do Not Enter Yet</div>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ Reset for next trade</button>
+
+  <div class="timestamp" id="timestamp"></div>
+  </section>
+
+  <section id="tab-posttrade" class="tab-panel">
+    <div class="panel-title">Post-Trade Replay</div>
+    <section class="section-block" style="margin-bottom: 14px;">
+      <div class="section-label">00 · Post-Trade Summary</div>
+      <div class="replay-grid">
+        <select class="replay-field" id="trade-state">
+          <option value="placed">Trade State: Order Placed</option>
+          <option value="running">Trade State: Running</option>
+          <option value="closed">Trade State: Closed</option>
+          <option value="cancelled">Trade State: Cancelled</option>
+        </select>
+        <select class="replay-field" id="trade-outcome">
+          <option value="pending">Outcome: Pending</option>
+          <option value="win">Outcome: Win</option>
+          <option value="loss">Outcome: Loss</option>
+          <option value="breakeven">Outcome: Breakeven</option>
+          <option value="partial-close">Outcome: Partial Close</option>
+          <option value="manual-close">Outcome: Manual Close</option>
+          <option value="cancelled">Outcome: Cancelled</option>
+        </select>
+        <input class="replay-field" id="trade-pnl-amount" type="number" step="any" placeholder="P/L amount (e.g. 125.5 or -45)"/>
+        <input class="replay-field" id="trade-pnl-currency" type="text" placeholder="P/L unit (USD, points, R)"/>
+      </div>
+      <textarea class="replay-note" id="trade-comments" placeholder="Reason to close / close management notes"></textarea>
+      <textarea class="replay-note" id="trade-review-notes" placeholder="Helpful post-trade notes: mistakes, lessons, what to repeat"></textarea>
+    </section>
+    <div id="posttrade-segments-board" class="checklist-board"></div>
+
+  </section>
+
+  <div class="fab-stack">
+    <button class="fab-btn" type="button" onclick="addCurrentTradeToWatchlist()">Add To Watchlist</button>
+    <button class="fab-btn" type="button" onclick="saveCurrentTrade()">Save Trade</button>
+  </div>
+
+  <aside id="risk-tool" class="risk-tool" aria-label="Risk and lot size calculator">
+    <button id="risk-tool-toggle" class="risk-tool-toggle" type="button" onclick="toggleRiskTool()">Risk Calculator +</button>
+    <div class="risk-tool-body">
+      <div class="risk-grid">
+        <div class="risk-field full">
+          <label>Instrument</label>
+          <input id="risk-instrument" type="text" list="instrument-options" placeholder="XAUUSD / EURUSD / NAS100"/>
+        </div>
+        <div class="risk-field">
+          <label>Direction</label>
+          <select id="risk-direction">
+            <option value="long">Long</option>
+            <option value="short">Short</option>
+          </select>
+        </div>
+        <div class="risk-field">
+          <label>Risk %</label>
+          <input id="risk-percent" type="number" step="0.01" min="0" placeholder="1.00"/>
+        </div>
+        <div class="risk-field">
+          <label>Account Size</label>
+          <input id="risk-account" type="number" step="any" min="0" placeholder="10000"/>
+        </div>
+        <div class="risk-field">
+          <label>Entry</label>
+          <input id="risk-entry" type="number" step="any" placeholder="0.00"/>
+        </div>
+        <div class="risk-field">
+          <label>Stop Loss</label>
+          <input id="risk-sl" type="number" step="any" placeholder="0.00"/>
+        </div>
+      </div>
+
+      <div class="risk-mini-actions">
+        <button class="risk-copy-btn" type="button" onclick="copyTradeValuesToRiskCalc()">Use Pre-Trade Values</button>
+        <div id="risk-status" class="risk-status"></div>
+      </div>
+
+      <div class="risk-output">
+        <div class="risk-kpi">
+          <div class="risk-kpi-label">Risk Amount</div>
+          <div class="risk-kpi-value" id="risk-amount">-</div>
+        </div>
+        <div class="risk-kpi">
+          <div class="risk-kpi-label">Stop Distance</div>
+          <div class="risk-kpi-value" id="risk-distance">-</div>
+        </div>
+        <div class="risk-kpi">
+          <div class="risk-kpi-label">Stop (pips/pts)</div>
+          <div class="risk-kpi-value" id="risk-pips">-</div>
+        </div>
+        <div class="risk-kpi">
+          <div class="risk-kpi-label">Lots</div>
+          <div class="risk-kpi-value primary" id="risk-lots">-</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+  const colorMap = {
+    purple: { color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+    coral:  { color: 'var(--coral)',  bg: 'var(--coral-bg)',  border: 'var(--coral-border)' },
+    teal:   { color: 'var(--teal)',   bg: 'var(--teal-bg)',   border: 'var(--teal-border)' },
+    green:  { color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+    blue:   { color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+    amber:  { color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+    gray:   { color: 'var(--gray)',   bg: 'var(--gray-bg)',   border: 'var(--gray-border)' },
+  };
+
+  let currentBias = 'short';
+  let activeTab = 'pretrade';
+  let lastMediaSection = 'htf';
+  let activeTradeRecordId = null;
+  let activeTradeCreatedAt = null;
+  let loadedFromWatchlist = false;
+  let watchlistSourceId = '';
+  const TRADE_STORAGE_KEY = 'smc_trade_records_v1';
+  const ACTIVE_TRADE_KEY = 'smc_active_trade_v1';
+  const ACTIVE_TRADE_ID_KEY = 'smc_active_trade_id_v1';
+  const SELECTED_TRADE_PAYLOAD_KEY = 'smc_selected_trade_payload_v1';
+  const SOURCE_WATCHLIST_ID_KEY = 'smc_source_watchlist_id_v1';
+  const ACTIVE_SETUP_KEY = 'smc_active_setup_v1';
+  const ACTIVE_SETUP_ID_KEY = 'smc_active_setup_id_v1';
+  const RISK_PREFS_KEY = 'smc_risk_calculator_prefs_v1';
+  const mediaBuckets = {};
+  const tradeRecords = [];
+  const RISK_SPEC_MAP = {
+    XAUUSD: { pointSize: 0.01, valuePerOneMovePerLot: 100, lotStep: 0.01 },
+    EURUSD: { pointSize: 0.0001, valuePerOneMovePerLot: 100000, lotStep: 0.01 },
+    GBPUSD: { pointSize: 0.0001, valuePerOneMovePerLot: 100000, lotStep: 0.01 },
+    USDJPY: { pointSize: 0.01, valuePerOneMovePerLot: 'usd-jpy-dynamic', lotStep: 0.01 },
+    BTCUSD: { pointSize: 1, valuePerOneMovePerLot: 1, lotStep: 0.01 },
+    NAS100: { pointSize: 1, valuePerOneMovePerLot: 1, lotStep: 0.01 },
+    US30: { pointSize: 1, valuePerOneMovePerLot: 1, lotStep: 0.01 },
+  };
+
+  function getCurrentSetupId() {
+    const activeSetup = getActiveSetupFromStorage();
+    if (activeSetup && typeof activeSetup === 'object') {
+      const id = String(activeSetup.id || activeSetup._id || '').trim();
+      if (id) return id;
+    }
+
+    return String(localStorage.getItem(ACTIVE_SETUP_ID_KEY) || '').trim();
+  }
+
+  function getMediaSectionsFromDom() {
+    const sections = [];
+    document.querySelectorAll('[data-media-section]').forEach(function (element) {
+      const section = String((element && element.dataset && element.dataset.mediaSection) || '').trim();
+      if (!section) return;
+      if (!sections.includes(section)) {
+        sections.push(section);
+      }
+    });
+    return sections;
+  }
+
+  function syncMediaBucketsFromDom() {
+    const sections = getMediaSectionsFromDom();
+    sections.forEach(function (section) {
+      if (!Array.isArray(mediaBuckets[section])) {
+        mediaBuckets[section] = [];
+      }
+    });
+
+    if (!lastMediaSection || !mediaBuckets[lastMediaSection]) {
+      lastMediaSection = sections[0] || 'real';
+    }
+
+    return sections;
+  }
+
+  function toggleSidebar(open) {
+    const nav = document.getElementById('side-nav');
+    const backdrop = document.getElementById('side-backdrop');
+    if (!nav || !backdrop) return;
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+  }
+
+  function getSidebarSession() {
+    if (window.FrontendAPI && FrontendAPI.getSession) {
+      return FrontendAPI.getSession() || null;
+    }
+
+    try {
+      const raw = localStorage.getItem('auth_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function initSidebarProfile() {
+    const profile = document.getElementById('profile-shortcut-name');
+    const avatar = document.getElementById('profile-shortcut-avatar');
+    if (!profile || !avatar) return;
+    const session = getSidebarSession();
+    const label = session && (session.name || session.username || session.userId)
+      ? String(session.name || session.username || session.userId)
+      : 'Trader';
+    profile.textContent = label;
+    avatar.textContent = String(label).trim().slice(0, 1).toUpperCase() || 'A';
+  }
+
+  async function signOutFromSidebar() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.logout) {
+        await FrontendAPI.logout();
+      } else {
+        localStorage.removeItem('auth_session');
+      }
+    } catch (err) {
+      localStorage.removeItem('auth_session');
+    }
+
+    window.location.replace('signin.html');
+  }
+
+  async function loadTradeRecords() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = await FrontendAPI.listTrades();
+        const records = result && Array.isArray(result.trades) ? result.trades : [];
+        tradeRecords.length = 0;
+        records.forEach(item => tradeRecords.push(item));
+        return;
+      }
+
+      const raw = localStorage.getItem(TRADE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        tradeRecords.length = 0;
+        parsed.forEach(item => tradeRecords.push(item));
+      }
+    } catch (err) {
+      console.error('Could not load trade records', err);
+    }
+  }
+
+  function persistTradeRecords() {
+    if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      return true;
+    }
+
+    try {
+      localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify(tradeRecords));
+      return true;
+    } catch (err) {
+      console.error('Could not persist trade records', err);
+      AppToast.error('Storage limit reached. Please clear older local trade records.');
+      return false;
+    }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadMediaSection(section) {
+    const bucket = getBucket(section);
+    const filesToUpload = [];
+    const existingUrls = [];
+
+    for (const item of bucket) {
+      if (!item || !item.file) continue;
+      
+      // If it's a new File object (not from restored data), upload it
+      if (item.file instanceof File) {
+        filesToUpload.push(item.file);
+      } else if (item.url && typeof item.url === 'string') {
+        // Already has a URL (either CDN or S3), keep it
+        existingUrls.push({
+          name: item.file.name || 'media.bin',
+          type: item.file.type || 'application/octet-stream',
+          size: item.file.size || 0,
+          url: item.url,
+        });
+      }
+    }
+
+    const uploadedUrls = [];
+
+    // Upload new files if API mode is enabled
+    if (filesToUpload.length > 0 && window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      try {
+        const result = await FrontendAPI.uploadTradeMedia(section, filesToUpload);
+        if (result && Array.isArray(result.files)) {
+          uploadedUrls.push(...result.files.map(f => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            key: f.key,
+            url: f.url,
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to upload media for section ' + section, err);
+        throw new Error('Failed to upload media: ' + (err.message || 'Unknown error'));
+      }
+    } else if (filesToUpload.length > 0) {
+      // In local mode, convert to data URLs
+      for (const file of filesToUpload) {
+        const dataUrl = await fileToDataUrl(file);
+        uploadedUrls.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: dataUrl,
+          dataUrl: dataUrl,
+        });
+      }
+    }
+
+    const persistedItems = [...existingUrls, ...uploadedUrls];
+
+    // Replace File objects with persisted metadata so unchanged media is not re-uploaded.
+    mediaBuckets[section] = persistedItems.map(function (item) {
+      return {
+        file: {
+          name: item.name || 'media.bin',
+          type: item.type || 'application/octet-stream',
+          size: item.size || 0,
+        },
+        url: item.url,
+        dataUrl: item.dataUrl || null,
+        key: item.key || ''
+      };
+    });
+    renderMedia(section);
+
+    return persistedItems;
+  }
+
+  async function serializeMediaSection(section) {
+    return await uploadMediaSection(section);
+  }
+
+  async function serializeAllMedia() {
+    syncMediaBucketsFromDom();
+    const payload = {};
+    const sections = Object.keys(mediaBuckets);
+    for (const section of sections) {
+      payload[section] = await serializeMediaSection(section);
+    }
+    return payload;
+  }
+
+  function restoreMediaFromPayload(mediaPayload) {
+    clearMedia();
+    if (!mediaPayload || typeof mediaPayload !== 'object') return;
+
+    syncMediaBucketsFromDom();
+    const sectionSet = new Set(Object.keys(mediaBuckets));
+    Object.keys(mediaPayload).forEach(section => sectionSet.add(String(section || '').trim()));
+
+    sectionSet.forEach(section => {
+      if (!section) return;
+      const list = Array.isArray(mediaPayload[section]) ? mediaPayload[section] : [];
+      const bucket = getBucket(section);
+      list.forEach(item => {
+        if (!item || (!item.url && !item.dataUrl)) return;
+        
+        const url = item.url || item.dataUrl;
+        const pseudoFile = {
+          name: item.name || 'media.bin',
+          type: item.type || 'application/octet-stream',
+          size: item.size || 0,
+        };
+        
+        bucket.push({
+          file: pseudoFile,
+          url: url,
+          dataUrl: item.dataUrl,
+        });
+      });
+      renderMedia(section);
+    });
+  }
+
+  function getActiveSetupFromStorage() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_SETUP_KEY);
+      if (!raw) return null;
+      const setup = JSON.parse(raw);
+      return setup && typeof setup === 'object' ? setup : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function updateSetupStatus() {
+    const status = document.getElementById('setup-status');
+    if (!status) return;
+
+    const activeSetup = getActiveSetupFromStorage();
+    if (activeSetup && activeSetup.name) {
+      status.textContent = 'Active setup: ' + activeSetup.name;
+      return;
+    }
+
+    const storedId = localStorage.getItem(ACTIVE_SETUP_ID_KEY);
+    status.textContent = storedId ? 'Active setup selected' : 'No setup loaded';
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+  }
+
+  function escapeAttr(text) {
+    return escapeHtml(text)
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getSegmentColor(segmentTitle, segmentIndex) {
+    const title = String(segmentTitle || '').toLowerCase();
+
+    if (title.includes('higher timeframe')) return 'purple';
+    if (title.includes('liquidity')) return 'purple';
+    if (title.includes('bias')) return 'coral';
+    if (title.includes('entry')) return 'green';
+    if (title.includes('filter')) return 'amber';
+
+    const fallbackColors = ['purple', 'coral', 'teal', 'green', 'amber', 'blue'];
+    return fallbackColors[segmentIndex % fallbackColors.length];
+  }
+
+  function renderSetupMediaWrapper(segment) {
+    const allowMedia = Array.isArray(segment.items) && segment.items.some(function (item) {
+      return item && item.allowMedia !== false;
+    });
+
+    if (!allowMedia) {
+      return '';
+    }
+
+    const sectionId = String(segment.id || '').trim();
+    if (!sectionId) {
+      return '';
+    }
+
+    const escapedSectionId = escapeAttr(sectionId);
+    return `
+      <div class="media-wrap" data-media-section="${escapedSectionId}">
+        <div class="media-tools">
+          <button class="media-btn" type="button" onclick="openMediaPicker('media-input-${escapedSectionId}')">+ Add trade media</button>
+          <button class="media-btn clear" type="button" onclick="clearMedia('${escapedSectionId}')">Clear media</button>
+        </div>
+        <input id="media-input-${escapedSectionId}" type="file" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event, '${escapedSectionId}')"/>
+        <div class="media-status" id="media-status-${escapedSectionId}">0 files attached</div>
+        <div class="media-hint">Tip: click this section and press Cmd+V to paste screenshot.</div>
+        <div class="media-grid" id="media-grid-${escapedSectionId}">
+          <div class="empty-media">No media attached yet.</div>
+        </div>
+      </div>
+    `.trim();
+  }
+
+  function renderChecklistNodeMarkup(node, segment, segmentColor, nodeKey, depth, branchTag) {
+    const safeNode = node && typeof node === 'object' ? node : {};
+    const isConditionNode = safeNode.nodeType === 'condition';
+    const isCommentNode = safeNode.nodeType === 'comment';
+    const nodeColor = isCommentNode ? 'gray' : (safeNode.required === false ? 'gray' : (safeNode.nodeType === 'condition' ? 'blue' : segmentColor));
+    const title = safeNode.title ? safeNode.title : 'Untitled item';
+    const description = safeNode.description ? safeNode.description : '';
+    const ifTitle = String(safeNode.ifTitle || 'If').trim() || 'If';
+    const elseTitle = String(safeNode.elseTitle || 'Else').trim() || 'Else';
+    const children = Array.isArray(safeNode.children) ? safeNode.children : [];
+    const branches = safeNode.branches && typeof safeNode.branches === 'object' ? safeNode.branches : { then: [], else: [] };
+    const branchGroupId = 'condition-' + String(nodeKey).replace(/[^a-zA-Z0-9_-]/g, '-');
+    const thenHandler = "toggleConditionBranch(event, '" + escapeAttr(branchGroupId) + "', 'then')";
+    const elseHandler = "toggleConditionBranch(event, '" + escapeAttr(branchGroupId) + "', 'else')";
+    const childHtml = children.length
+      ? '<div class="node-children">' + children.map(function (child, childIndex) {
+        return renderChecklistNodeMarkup(child, segment, segmentColor, nodeKey + '-child-' + childIndex, depth + 1, branchTag);
+      }).join('') + '</div>'
+      : '';
+
+    const branchHtml = isConditionNode
+      ? '<div class="branch-wrap">'
+        + '<div class="branch-switch-layout">'
+        + '<div class="branch-switch-nav">'
+        + '<button type="button" class="branch-switch-btn active" data-branch-btn="' + escapeAttr(branchGroupId) + '-then" onclick="' + thenHandler + '">' + escapeHtml(ifTitle) + '</button>'
+        + '<button type="button" class="branch-switch-btn" data-branch-btn="' + escapeAttr(branchGroupId) + '-else" onclick="' + elseHandler + '">' + escapeHtml(elseTitle) + '</button>'
+        + '</div>'
+        + '<div>'
+        + '<div id="' + escapeAttr(branchGroupId) + '-then" class="branch-pane active">'
+        + '<div class="branch-title">' + escapeHtml(ifTitle) + '</div>'
+        + '<div class="node-children">' + ((Array.isArray(branches.then) && branches.then.length)
+          ? branches.then.map(function (child, childIndex) {
+            return renderChecklistNodeMarkup(child, segment, segmentColor, nodeKey + '-then-' + childIndex, depth + 1, ifTitle);
+          }).join('')
+          : '<div class="empty">No ' + escapeHtml(ifTitle.toLowerCase()) + '-branch items yet.</div>') + '</div>'
+        + '</div>'
+        + '<div id="' + escapeAttr(branchGroupId) + '-else" class="branch-pane">'
+        + '<div class="branch-title">' + escapeHtml(elseTitle) + '</div>'
+        + '<div class="node-children">' + ((Array.isArray(branches.else) && branches.else.length)
+          ? branches.else.map(function (child, childIndex) {
+            return renderChecklistNodeMarkup(child, segment, segmentColor, nodeKey + '-else-' + childIndex, depth + 1, elseTitle);
+          }).join('')
+          : '<div class="empty">No ' + escapeHtml(elseTitle.toLowerCase()) + '-branch items yet.</div>') + '</div>'
+        + '</div>'
+        + '</div>'
+        + '</div>'
+        + '</div>'
+      : '';
+
+    if (isConditionNode) {
+      return '<div class="condition-node">'
+        + '<div class="item-content">'
+        + '<div class="item-tag" style="--item-color:var(--' + nodeColor + ');--item-bg:var(--' + nodeColor + '-bg);--item-border:var(--' + nodeColor + '-border)">' + escapeHtml(segment.title || 'Setup') + '</div>'
+        + '<div class="item-title">' + escapeHtml(title) + '</div>'
+        + '<div class="item-desc">' + escapeHtml(description) + '</div>'
+        + childHtml
+        + branchHtml
+        + '</div>'
+        + '</div>';
+    }
+
+    if (isCommentNode) {
+      const commentNodeId = String(node.id || nodeKey || '').trim();
+      return '<div class="comment-item' + (depth > 0 ? ' nested' : '') + '" data-color="' + nodeColor + '" data-id="' + escapeAttr(node.id || nodeKey) + '">'
+        + '<div class="item-content">'
+        + '<div class="item-tag" style="--item-color:var(--' + nodeColor + ');--item-bg:var(--' + nodeColor + '-bg);--item-border:var(--' + nodeColor + '-border)">' + escapeHtml(branchTag || 'Comment') + '</div>'
+        + '<div class="item-title">' + escapeHtml(title) + '</div>'
+        + '<div class="item-desc">' + escapeHtml(description) + '</div>'
+        + '<textarea class="node-comment-input" data-comment-node-id="' + escapeAttr(commentNodeId) + '" data-comment-scope="posttrade" placeholder="Write your comment here..." onclick="event.stopPropagation()" onkeydown="event.stopPropagation()"></textarea>'
+        + childHtml
+        + '</div>'
+        + '</div>';
+    }
+
+    return '<div class="check-item' + (depth > 0 ? ' nested' : '') + '" data-color="' + nodeColor + '" data-id="' + escapeAttr(node.id || nodeKey) + '" onclick="toggle(this)">'
+      + '<div class="checkbox">'
+      + '<svg width="11" height="9" viewBox="0 0 11 9" fill="none">'
+      + '<path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '</svg>'
+      + '</div>'
+      + '<div class="item-content">'
+      + '<div class="item-tag" style="--item-color:var(--' + nodeColor + ');--item-bg:var(--' + nodeColor + '-bg);--item-border:var(--' + nodeColor + '-border)">' + escapeHtml(branchTag || (depth > 0 ? 'Subitem' : (safeNode.nodeType === 'condition' ? 'If / Else' : segment.title || 'Setup'))) + '</div>'
+      + '<div class="item-title">' + escapeHtml(title) + '</div>'
+      + '<div class="item-desc">' + escapeHtml(description) + '</div>'
+      + childHtml
+      + branchHtml
+      + '</div>'
+      + '</div>';
+  }
+
+  function renderPostTradeChecklistBoard(setup) {
+    const board = document.getElementById('posttrade-segments-board');
+    if (!board) return;
+
+    const segments = Array.isArray(setup && setup.postTradeSegments) ? setup.postTradeSegments : [];
+    if (!segments.length) {
+      board.innerHTML = '<div class="empty">No post-trade segments available.</div>';
+      return;
+    }
+
+    const columns = [[], [], []];
+    segments.forEach(function (segment, index) {
+      columns[index % columns.length].push({ segment: segment, index: index });
+    });
+
+    board.innerHTML = columns.map(function (columnSegments) {
+      return '<div class="board-col">' + columnSegments.map(function (entry) {
+        const segment = entry.segment || {};
+        const segmentIndex = entry.index;
+        const segmentKey = String(segment.id || ('posttrade-segment-' + segmentIndex));
+        const segmentColor = getSegmentColor(segment.title, segmentIndex);
+        const items = Array.isArray(segment.items) ? segment.items : [];
+        const itemsHtml = items.map(function (item, itemIndex) {
+          return renderChecklistNodeMarkup(item, segment, segmentColor, segmentKey + '-item-' + itemIndex, 0, null);
+        }).join('');
+
+        return '<section class="section-block" data-media-section="' + escapeAttr(segmentKey) + '">'
+          + '<div class="section-label">' + String(segmentIndex + 1).padStart(2, '0') + ' · ' + escapeHtml(segment.title || 'Untitled Post-Trade Segment') + '</div>'
+          + itemsHtml
+          + renderSetupMediaWrapper(segment)
+          + '</section>';
+      }).join('') + '</div>';
+    }).join('');
+  }
+
+  function renderSetupChecklistBoard(setup) {
+    const board = document.querySelector('#tab-pretrade .checklist-board');
+    if (!board) return;
+
+    const segments = Array.isArray(setup && setup.preTradeSegments) ? setup.preTradeSegments : [];
+    if (!segments.length) {
+      board.innerHTML = '<div class="empty">No setup segments available.</div>';
+      return;
+    }
+
+    const columns = [[], [], []];
+    segments.forEach(function (segment, index) {
+      columns[index % columns.length].push({ segment: segment, index: index });
+    });
+
+    function renderWorkflowNode(node, segment, segmentColor, nodeKey, depth, branchTag) {
+      const safeNode = node && typeof node === 'object' ? node : {};
+      const isConditionNode = safeNode.nodeType === 'condition';
+      const isCommentNode = safeNode.nodeType === 'comment';
+      const nodeColor = isCommentNode ? 'gray' : (safeNode.required === false ? 'gray' : (safeNode.nodeType === 'condition' ? 'blue' : segmentColor));
+      const title = safeNode.title ? safeNode.title : 'Untitled item';
+      const description = safeNode.description ? safeNode.description : '';
+      const ifTitle = String(safeNode.ifTitle || 'If').trim() || 'If';
+      const elseTitle = String(safeNode.elseTitle || 'Else').trim() || 'Else';
+      const children = Array.isArray(safeNode.children) ? safeNode.children : [];
+      const branches = safeNode.branches && typeof safeNode.branches === 'object' ? safeNode.branches : { then: [], else: [] };
+      const branchGroupId = 'condition-' + String(nodeKey).replace(/[^a-zA-Z0-9_-]/g, '-');
+      const childHtml = children.length
+        ? '<div class="node-children">' + children.map(function (child, childIndex) {
+          return renderWorkflowNode(child, segment, segmentColor, nodeKey + '-child-' + childIndex, depth + 1, branchTag);
+        }).join('') + '</div>'
+        : '';
+      const branchHtml = safeNode.nodeType === 'condition'
+        ? '<div class="branch-wrap">'
+          + '<div class="branch-switch-layout">'
+          + '<div class="branch-switch-nav">'
+          + '<button type="button" class="branch-switch-btn active" data-branch-btn="' + escapeAttr(branchGroupId) + '-then" onclick="toggleConditionBranch(event, \'' + escapeAttr(branchGroupId) + '\', \'then\')">' + escapeHtml(ifTitle) + '</button>'
+          + '<button type="button" class="branch-switch-btn" data-branch-btn="' + escapeAttr(branchGroupId) + '-else" onclick="toggleConditionBranch(event, \'' + escapeAttr(branchGroupId) + '\', \'else\')">' + escapeHtml(elseTitle) + '</button>'
+          + '</div>'
+          + '<div>'
+          + '<div id="' + escapeAttr(branchGroupId) + '-then" class="branch-pane active">'
+          + '<div class="branch-title">' + escapeHtml(ifTitle) + '</div>'
+          + '<div class="node-children">' + ((Array.isArray(branches.then) && branches.then.length)
+            ? branches.then.map(function (child, childIndex) {
+              return renderWorkflowNode(child, segment, segmentColor, nodeKey + '-then-' + childIndex, depth + 1, ifTitle);
+            }).join('')
+            : '<div class="empty">No ' + escapeHtml(ifTitle.toLowerCase()) + '-branch items yet.</div>') + '</div>'
+          + '</div>'
+          + '<div id="' + escapeAttr(branchGroupId) + '-else" class="branch-pane">'
+          + '<div class="branch-title">' + escapeHtml(elseTitle) + '</div>'
+          + '<div class="node-children">' + ((Array.isArray(branches.else) && branches.else.length)
+            ? branches.else.map(function (child, childIndex) {
+              return renderWorkflowNode(child, segment, segmentColor, nodeKey + '-else-' + childIndex, depth + 1, elseTitle);
+            }).join('')
+            : '<div class="empty">No ' + escapeHtml(elseTitle.toLowerCase()) + '-branch items yet.</div>') + '</div>'
+          + '</div>'
+          + '</div>'
+          + '</div>'
+          + '</div>'
+        : '';
+
+      if (isConditionNode) {
+        return '<div class="condition-node">'
+          + '<div class="item-content">'
+          + '<div class="item-tag" style="--item-color:var(--' + nodeColor + ');--item-bg:var(--' + nodeColor + '-bg);--item-border:var(--' + nodeColor + '-border)">' + escapeHtml(segment.title || 'Setup') + '</div>'
+          + '<div class="item-title">' + escapeHtml(title) + '</div>'
+          + '<div class="item-desc">' + escapeHtml(description) + '</div>'
+          + childHtml
+          + branchHtml
+          + '</div>'
+          + '</div>';
+      }
+
+      if (isCommentNode) {
+        const commentNodeId = String(node.id || nodeKey || '').trim();
+        return '<div class="comment-item' + (depth > 0 ? ' nested' : '') + '" data-color="' + nodeColor + '" data-id="' + escapeAttr(node.id || nodeKey) + '">'
+          + '<div class="item-content">'
+          + '<div class="item-tag" style="--item-color:var(--' + nodeColor + ');--item-bg:var(--' + nodeColor + '-bg);--item-border:var(--' + nodeColor + '-border)">' + escapeHtml(branchTag || 'Comment') + '</div>'
+          + '<div class="item-title">' + escapeHtml(title) + '</div>'
+          + '<div class="item-desc">' + escapeHtml(description) + '</div>'
+          + '<textarea class="node-comment-input" data-comment-node-id="' + escapeAttr(commentNodeId) + '" data-comment-scope="pretrade" placeholder="Write your comment here..." onclick="event.stopPropagation()" onkeydown="event.stopPropagation()"></textarea>'
+          + childHtml
+          + '</div>'
+          + '</div>';
+      }
+
+      return '<div class="check-item' + (depth > 0 ? ' nested' : '') + '" data-color="' + nodeColor + '" data-id="' + escapeAttr(node.id || nodeKey) + '" onclick="toggle(this)">'
+        + '<div class="checkbox">'
+        + '<svg width="11" height="9" viewBox="0 0 11 9" fill="none">'
+        + '<path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+        + '</svg>'
+        + '</div>'
+        + '<div class="item-content">'
+        + '<div class="item-tag" style="--item-color:var(--' + nodeColor + ');--item-bg:var(--' + nodeColor + '-bg);--item-border:var(--' + nodeColor + '-border)">' + escapeHtml(branchTag || (depth > 0 ? 'Subitem' : (safeNode.nodeType === 'condition' ? 'If / Else' : segment.title || 'Setup'))) + '</div>'
+        + '<div class="item-title">' + escapeHtml(title) + '</div>'
+        + '<div class="item-desc">' + escapeHtml(description) + '</div>'
+        + childHtml
+        + branchHtml
+        + '</div>'
+        + '</div>';
+    }
+
+    board.innerHTML = columns.map(function (columnSegments) {
+      return '<div class="board-col">' + columnSegments.map(function (entry) {
+        const segment = entry.segment || {};
+        const segmentIndex = entry.index;
+        const segmentKey = String(segment.id || ('segment-' + segmentIndex));
+        const segmentColor = getSegmentColor(segment.title, segmentIndex);
+        const items = Array.isArray(segment.items) ? segment.items : [];
+        let itemsHtml = '';
+
+        const topLevelCondition = items.length > 0 && items[0] && items[0].nodeType === 'condition' ? items[0] : null;
+        if (topLevelCondition) {
+          const ifTitle = String(topLevelCondition.ifTitle || 'If').trim() || 'If';
+          const elseTitle = String(topLevelCondition.elseTitle || 'Else').trim() || 'Else';
+          const branches = topLevelCondition.branches && typeof topLevelCondition.branches === 'object'
+            ? topLevelCondition.branches
+            : { then: [], else: [] };
+          const switchId = 'section-branch-' + segmentKey;
+          const trailingItems = items.slice(1);
+          const shortItems = Array.isArray(branches.then) ? branches.then : [];
+          const longItems = Array.isArray(branches.else) ? branches.else : [];
+          const shortItemsHtml = shortItems.length
+            ? shortItems.map(function (child, childIndex) {
+              return renderWorkflowNode(child, segment, segmentColor, segmentKey + '-then-' + childIndex, 0, ifTitle);
+            }).join('')
+            : '<div class="empty">No ' + escapeHtml(ifTitle.toLowerCase()) + ' items yet.</div>';
+          const longItemsHtml = longItems.length
+            ? longItems.map(function (child, childIndex) {
+              return renderWorkflowNode(child, segment, segmentColor, segmentKey + '-else-' + childIndex, 0, elseTitle);
+            }).join('')
+            : '<div class="empty">No ' + escapeHtml(elseTitle.toLowerCase()) + ' items yet.</div>';
+          const trailingItemsHtml = trailingItems.length
+            ? trailingItems.map(function (item, itemIndex) {
+              return renderWorkflowNode(item, segment, segmentColor, segmentKey + '-item-' + (itemIndex + 1), 0, null);
+            }).join('')
+            : '';
+
+          itemsHtml = '<div class="section-direction-switch">'
+            + '<button type="button" class="section-direction-btn active" data-branch="then" data-section-branch-btn="' + escapeAttr(switchId) + '-then" onclick="toggleSectionBranch(event, \'' + escapeAttr(switchId) + '\', \'then\')">' + escapeHtml(ifTitle) + '</button>'
+            + '<button type="button" class="section-direction-btn" data-branch="else" data-section-branch-btn="' + escapeAttr(switchId) + '-else" onclick="toggleSectionBranch(event, \'' + escapeAttr(switchId) + '\', \'else\')">' + escapeHtml(elseTitle) + '</button>'
+            + '</div>'
+            + '<div id="' + escapeAttr(switchId) + '-then" class="section-direction-pane active">' + shortItemsHtml + '</div>'
+            + '<div id="' + escapeAttr(switchId) + '-else" class="section-direction-pane">' + longItemsHtml + '</div>'
+            + trailingItemsHtml;
+        } else {
+          itemsHtml = items.map(function (item, itemIndex) {
+            return renderWorkflowNode(item, segment, segmentColor, segmentKey + '-item-' + itemIndex, 0, null);
+          }).join('');
+        }
+
+        return '<section class="section-block" data-media-section="' + escapeAttr(segmentKey) + '">'
+          + '<div class="section-label">' + String(segmentIndex + 1).padStart(2, '0') + ' · ' + escapeHtml(segment.title || 'Untitled Segment') + '</div>'
+          + itemsHtml
+          + renderSetupMediaWrapper(segment)
+          + '</section>';
+      }).join('') + '</div>';
+    }).join('');
+  }
+
+  function toggleConditionBranch(event, groupId, branchName) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const thenPane = document.getElementById(groupId + '-then');
+    const elsePane = document.getElementById(groupId + '-else');
+    const isThen = branchName !== 'else';
+
+    if (thenPane) thenPane.classList.toggle('active', isThen);
+    if (elsePane) elsePane.classList.toggle('active', !isThen);
+
+    document.querySelectorAll('[data-branch-btn="' + groupId + '-then"]').forEach(function (btn) {
+      btn.classList.toggle('active', isThen);
+    });
+    document.querySelectorAll('[data-branch-btn="' + groupId + '-else"]').forEach(function (btn) {
+      btn.classList.toggle('active', !isThen);
+    });
+  }
+
+  function toggleSectionBranch(event, switchId, branchName) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const isThen = branchName !== 'else';
+    const thenPane = document.getElementById(switchId + '-then');
+    const elsePane = document.getElementById(switchId + '-else');
+    if (thenPane) thenPane.classList.toggle('active', isThen);
+    if (elsePane) elsePane.classList.toggle('active', !isThen);
+
+    document.querySelectorAll('[data-section-branch-btn="' + switchId + '-then"]').forEach(function (btn) {
+      btn.classList.toggle('active', isThen);
+    });
+    document.querySelectorAll('[data-section-branch-btn="' + switchId + '-else"]').forEach(function (btn) {
+      btn.classList.toggle('active', !isThen);
+    });
+  }
+
+  function getSavedSetupsFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem('smc_saved_setups_v1');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function getActiveSetupJsonFromStorage() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_SETUP_KEY);
+      console.log('active setup json:', raw);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (err) {
+      console.log('active setup json parse failed');
+      return null;
+    }
+  }
+
+  async function resolveSetupsForChecklist() {
+    if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      if (!FrontendAPI.listSetups) return [];
+      const result = await FrontendAPI.listSetups();
+      const setups = result && Array.isArray(result.setups) ? result.setups : [];
+      return setups;
+    }
+
+    return getSavedSetupsFromLocalStorage();
+  }
+
+  function setChecklistVisible(enabled) {
+    const tabs = document.querySelector('.tabs');
+    const pretrade = document.getElementById('tab-pretrade');
+    const posttrade = document.getElementById('tab-posttrade');
+    const fab = document.querySelector('.fab-stack');
+    const riskTool = document.getElementById('risk-tool');
+    const setupRequired = document.getElementById('setup-required');
+
+    if (tabs) tabs.style.display = enabled ? '' : 'none';
+    if (pretrade) pretrade.style.display = enabled ? '' : 'none';
+    if (posttrade) posttrade.style.display = enabled ? '' : 'none';
+    if (fab) fab.style.display = enabled ? '' : 'none';
+    if (riskTool) riskTool.style.display = enabled ? '' : 'none';
+    if (setupRequired) setupRequired.classList.toggle('visible', !enabled);
+  }
+
+  async function enforceDefaultSetupForChecklist() {
+    try {
+      const availableSetups = await resolveSetupsForChecklist();
+      const activeSetup = getActiveSetupJsonFromStorage();
+      const activeSetupId = activeSetup && typeof activeSetup === 'object'
+        ? String(activeSetup.id || activeSetup._id || '').trim()
+        : '';
+
+      let resolvedSetup = null;
+
+      if (activeSetup && typeof activeSetup === 'object') {
+        resolvedSetup = activeSetup;
+      }
+
+      if (!resolvedSetup) {
+        const storedActiveSetup = getActiveSetupFromStorage();
+        if (storedActiveSetup && typeof storedActiveSetup === 'object') {
+          resolvedSetup = storedActiveSetup;
+        }
+      }
+
+      if (!resolvedSetup) {
+        resolvedSetup = availableSetups.find(function (item) {
+          return item && item.isDefault === true;
+        }) || null;
+      }
+
+      if (!resolvedSetup) {
+        localStorage.removeItem(ACTIVE_SETUP_KEY);
+        localStorage.removeItem(ACTIVE_SETUP_ID_KEY);
+        updateSetupStatus();
+        setChecklistVisible(false);
+        return false;
+      }
+
+      localStorage.setItem(ACTIVE_SETUP_KEY, JSON.stringify(resolvedSetup));
+      if (resolvedSetup.id || resolvedSetup._id) {
+        localStorage.setItem(ACTIVE_SETUP_ID_KEY, String(resolvedSetup.id || resolvedSetup._id));
+      } else {
+        localStorage.removeItem(ACTIVE_SETUP_ID_KEY);
+      }
+      renderSetupChecklistBoard(resolvedSetup);
+      renderPostTradeChecklistBoard(resolvedSetup);
+      syncMediaBucketsFromDom();
+      updateSetupStatus();
+      setChecklistVisible(true);
+      return resolvedSetup;
+    } catch (err) {
+      setChecklistVisible(false);
+      return false;
+    }
+  }
+
+  async function collectTradeSnapshot() {
+    const preTradeItems = Array.from(document.querySelectorAll('#tab-pretrade .check-item'));
+    const postTradeItems = Array.from(document.querySelectorAll('#tab-posttrade .check-item'));
+    const checked = preTradeItems.filter(el => el.classList.contains('checked')).length;
+    const total = preTradeItems.length;
+    const entry = getInputValue('entry');
+    const sl = getInputValue('sl');
+    const lrl = getInputValue('lrl');
+    const mediaPayload = await serializeAllMedia();
+    const activeSetup = getActiveSetupFromStorage();
+    const setupId = activeSetup && typeof activeSetup === 'object'
+      ? String(activeSetup.id || activeSetup._id || '').trim()
+      : String(localStorage.getItem(ACTIVE_SETUP_ID_KEY) || '').trim();
+
+    const mediaCounts = Object.keys(mediaPayload).reduce(function (accumulator, section) {
+      const items = Array.isArray(mediaPayload[section]) ? mediaPayload[section] : [];
+      accumulator[section] = items.length;
+      return accumulator;
+    }, {});
+
+    const mediaBySetup = setupId
+      ? { [setupId]: mediaPayload }
+      : {};
+    const nodeComments = getNodeCommentsFromInputs();
+    const sourceWatchlistId = String(localStorage.getItem(SOURCE_WATCHLIST_ID_KEY) || '').trim();
+
+    return {
+      createdAt: new Date().toISOString(),
+      setupId: setupId,
+      setupName: activeSetup && activeSetup.name ? String(activeSetup.name) : '',
+      sourceWatchlistId: sourceWatchlistId,
+      setupSnapshot: activeSetup,
+      tradeName: getInputValue('trade-name').trim(),
+      instrument: getInputValue('trade-instrument').trim(),
+      tradeTimestamp: getInputValue('trade-timestamp').trim(),
+      tradeState: getInputValue('trade-state', 'placed') || 'placed',
+      outcome: getInputValue('trade-outcome', 'pending') || 'pending',
+      comments: getInputValue('trade-comments').trim(),
+      bias: currentBias,
+      branchSelections: getBranchSelections(),
+      checkedIds: preTradeItems
+        .filter(el => el.classList.contains('checked'))
+        .map(el => el.dataset.id)
+        .filter(Boolean),
+      postTradeCheckedIds: postTradeItems
+        .filter(el => el.classList.contains('checked'))
+        .map(el => el.dataset.id)
+        .filter(Boolean),
+      progress: { checked, total },
+      prices: { entry, sl, lrl },
+      notes: {
+        tradeState: getInputValue('trade-state', 'placed') || 'placed',
+        outcome: getInputValue('trade-outcome', 'pending') || 'pending',
+        comments: getInputValue('trade-comments').trim(),
+        pnlAmount: getInputValue('trade-pnl-amount').trim(),
+        pnlCurrency: getInputValue('trade-pnl-currency').trim(),
+        reviewNotes: getInputValue('trade-review-notes').trim(),
+        nodeComments: nodeComments,
+      },
+      media: mediaPayload,
+      mediaBySetup: mediaBySetup,
+      mediaCounts: mediaCounts,
+    };
+  }
+
+  function getNodeCommentsFromInputs() {
+    const result = { pretrade: {}, posttrade: {} };
+    document.querySelectorAll('.node-comment-input[data-comment-node-id][data-comment-scope]').forEach(function (input) {
+      const scope = String(input.getAttribute('data-comment-scope') || '').trim();
+      const nodeId = String(input.getAttribute('data-comment-node-id') || '').trim();
+      const value = input.value != null ? String(input.value) : '';
+      if (!nodeId || !scope) return;
+      if (scope !== 'pretrade' && scope !== 'posttrade') return;
+      result[scope][nodeId] = value;
+    });
+    return result;
+  }
+
+  function applyNodeCommentsToInputs(nodeComments) {
+    const source = nodeComments && typeof nodeComments === 'object' ? nodeComments : {};
+    const pretrade = source.pretrade && typeof source.pretrade === 'object' ? source.pretrade : {};
+    const posttrade = source.posttrade && typeof source.posttrade === 'object' ? source.posttrade : {};
+
+    document.querySelectorAll('.node-comment-input[data-comment-node-id][data-comment-scope]').forEach(function (input) {
+      const scope = String(input.getAttribute('data-comment-scope') || '').trim();
+      const nodeId = String(input.getAttribute('data-comment-node-id') || '').trim();
+      if (!nodeId || !scope) return;
+      if (scope === 'pretrade') {
+        input.value = pretrade[nodeId] != null ? String(pretrade[nodeId]) : '';
+      } else if (scope === 'posttrade') {
+        input.value = posttrade[nodeId] != null ? String(posttrade[nodeId]) : '';
+      }
+    });
+  }
+
+  function replaceOrInsertTrade(savedTrade) {
+    if (!savedTrade) return;
+
+    const savedId = savedTrade.id != null ? String(savedTrade.id) : null;
+    if (!savedId) {
+      tradeRecords.unshift(savedTrade);
+      return;
+    }
+
+    const index = tradeRecords.findIndex(function (trade) {
+      return String(trade && trade.id) === savedId;
+    });
+
+    if (index >= 0) {
+      tradeRecords[index] = savedTrade;
+      return;
+    }
+
+    tradeRecords.unshift(savedTrade);
+  }
+
+  async function saveCurrentTrade() {
+    try {
+      // Show upload status
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const hasMedia = Object.values(mediaBuckets).some(bucket => bucket.length > 0);
+        if (hasMedia) {
+          AppToast.success('Uploading media files...');
+        }
+      }
+
+      const snapshot = await collectTradeSnapshot();
+      const sourceWatchlistId = String(snapshot.sourceWatchlistId || localStorage.getItem(SOURCE_WATCHLIST_ID_KEY) || watchlistSourceId || '').trim();
+
+      const isEditMode = (activeTradeRecordId !== null && activeTradeRecordId !== undefined)
+        && sourceWatchlistId === ''
+        && loadedFromWatchlist !== true;
+      const payload = Object.assign({}, snapshot, {
+        createdAt: isEditMode && activeTradeCreatedAt ? activeTradeCreatedAt : snapshot.createdAt
+      });
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        let result = null;
+        if (isEditMode) {
+          try {
+            result = await FrontendAPI.updateTrade(activeTradeRecordId, payload);
+          } catch (updateErr) {
+            const message = String((updateErr && updateErr.message) || '');
+            if (/trade not found/i.test(message)) {
+              result = await FrontendAPI.createTrade(payload);
+              activeTradeRecordId = null;
+              activeTradeCreatedAt = null;
+            } else {
+              throw updateErr;
+            }
+          }
+        } else {
+          result = await FrontendAPI.createTrade(payload);
+        }
+
+        if (result && result.trade) {
+          replaceOrInsertTrade(result.trade);
+          activeTradeRecordId = result.trade.id != null ? String(result.trade.id) : activeTradeRecordId;
+          activeTradeCreatedAt = result.trade.createdAt || payload.createdAt;
+        }
+
+        if (sourceWatchlistId && FrontendAPI.deleteWatchlist) {
+          try {
+            await FrontendAPI.deleteWatchlist(sourceWatchlistId);
+          } catch (cleanupErr) {
+            console.warn('Could not delete source watchlist item after saving trade', cleanupErr);
+          }
+          localStorage.removeItem(SOURCE_WATCHLIST_ID_KEY);
+          loadedFromWatchlist = false;
+          watchlistSourceId = '';
+        }
+
+        AppToast.success(isEditMode ? 'Trade updated in database.' : 'Trade saved to database.');
+        return;
+      }
+
+      if (isEditMode) {
+        const localSnapshot = Object.assign({}, payload, { id: activeTradeRecordId, createdAt: activeTradeCreatedAt || payload.createdAt, updatedAt: new Date().toISOString() });
+        replaceOrInsertTrade(localSnapshot);
+      } else {
+        const localSnapshot = Object.assign({}, payload, { id: Date.now() });
+        tradeRecords.unshift(localSnapshot);
+        activeTradeRecordId = String(localSnapshot.id);
+        activeTradeCreatedAt = localSnapshot.createdAt;
+      }
+
+      const ok = persistTradeRecords();
+      if (!ok) {
+        if (!isEditMode) {
+          tradeRecords.shift();
+        }
+        return;
+      }
+
+      if (sourceWatchlistId) {
+        try {
+          const watchlistKey = 'smc_watchlist_records_v1';
+          const watchlistRaw = localStorage.getItem(watchlistKey);
+          const watchlistList = watchlistRaw ? JSON.parse(watchlistRaw) : [];
+          if (Array.isArray(watchlistList)) {
+            const nextWatchlist = watchlistList.filter(function (item) {
+              return String(item && item.id) !== String(sourceWatchlistId);
+            });
+            localStorage.setItem(watchlistKey, JSON.stringify(nextWatchlist));
+          }
+        } catch (cleanupErr) {
+          console.warn('Could not remove source watchlist item from local storage', cleanupErr);
+        }
+        localStorage.removeItem(SOURCE_WATCHLIST_ID_KEY);
+        loadedFromWatchlist = false;
+        watchlistSourceId = '';
+      }
+
+      AppToast.success(isEditMode ? 'Trade updated.' : 'Trade saved with media. Open List Of Trades from the left sidebar to load it.');
+    } catch (err) {
+      console.error('Could not save trade', err);
+      AppToast.error('Failed to save trade: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  async function addCurrentTradeToWatchlist() {
+    try {
+      const snapshot = await collectTradeSnapshot();
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        if (!FrontendAPI.createWatchlist) {
+          throw new Error('Watchlist API is not available');
+        }
+
+        await FrontendAPI.createWatchlist(snapshot);
+        AppToast.success('Added to watchlist.');
+        return;
+      }
+
+      const key = 'smc_watchlist_records_v1';
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      const records = Array.isArray(list) ? list : [];
+      const localSnapshot = Object.assign({}, snapshot, { id: Date.now() });
+      records.unshift(localSnapshot);
+      localStorage.setItem(key, JSON.stringify(records));
+      AppToast.success('Added to watchlist.');
+    } catch (err) {
+      console.error('Could not add to watchlist', err);
+      AppToast.error('Failed to add to watchlist: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  function applyCheckedStyle(el) {
+    const c = colorMap[el.dataset.color] || colorMap.green;
+    el.style.setProperty('--item-color', c.color);
+    el.style.setProperty('--item-bg', c.bg);
+    el.style.setProperty('--item-border', c.border);
+  }
+
+  function loadTradePayload(trade) {
+    if (!trade) return;
+
+    const options = arguments[1] && typeof arguments[1] === 'object' ? arguments[1] : {};
+    const fromWatchlist = options.fromWatchlist === true;
+    const sourceWatchlistId = String(options.sourceWatchlistId || trade.sourceWatchlistId || trade.id || '').trim();
+
+    const tradeName = trade.tradeName || trade.name || '';
+    const notes = trade.notes || {};
+
+    if (fromWatchlist) {
+      activeTradeRecordId = null;
+      activeTradeCreatedAt = null;
+      loadedFromWatchlist = true;
+      watchlistSourceId = sourceWatchlistId;
+      if (sourceWatchlistId) {
+        localStorage.setItem(SOURCE_WATCHLIST_ID_KEY, sourceWatchlistId);
+      }
+    } else {
+      activeTradeRecordId = trade.id != null ? String(trade.id) : null;
+      activeTradeCreatedAt = trade.createdAt || null;
+      loadedFromWatchlist = false;
+      watchlistSourceId = '';
+      localStorage.removeItem(SOURCE_WATCHLIST_ID_KEY);
+    }
+
+    const setupSnapshot = trade.setupSnapshot && typeof trade.setupSnapshot === 'object' ? trade.setupSnapshot : null;
+    if (setupSnapshot) {
+      localStorage.setItem(ACTIVE_SETUP_KEY, JSON.stringify(setupSnapshot));
+      if (setupSnapshot.id || setupSnapshot._id) {
+        localStorage.setItem(ACTIVE_SETUP_ID_KEY, String(setupSnapshot.id || setupSnapshot._id));
+      }
+      renderSetupChecklistBoard(setupSnapshot);
+      renderPostTradeChecklistBoard(setupSnapshot);
+      syncMediaBucketsFromDom();
+      updateSetupStatus();
+    }
+
+    document.querySelectorAll('.check-item').forEach(el => {
+      el.classList.remove('checked');
+      applyCheckedStyle(el);
+    });
+
+    setBias(trade.bias === 'long' ? 'long' : 'short');
+    applyBranchSelections(trade.branchSelections);
+
+    function applyCheckedIds(rootSelector, ids) {
+      if (!Array.isArray(ids)) return;
+      ids.forEach(function (id) {
+        const el = document.querySelector(rootSelector + ' .check-item[data-id="' + id + '"]');
+        if (el) {
+          el.classList.add('checked');
+          applyCheckedStyle(el);
+        }
+      });
+    }
+
+    applyCheckedIds('#tab-pretrade', trade.checkedIds);
+    applyCheckedIds('#posttrade-segments-board', trade.postTradeCheckedIds);
+
+    setInputValue('entry', (trade.prices && trade.prices.entry) || '');
+    setInputValue('sl', (trade.prices && trade.prices.sl) || '');
+    setInputValue('lrl', (trade.prices && trade.prices.lrl) || '');
+    setInputValue('trade-name', tradeName);
+    setInputValue('trade-instrument', trade.instrument || notes.instrument || '');
+    setInputValue('trade-timestamp', trade.tradeTimestamp || notes.tradeTimestamp || '');
+    setInputValue('trade-state', notes.tradeState || trade.tradeState || 'placed');
+    setInputValue('trade-outcome', notes.outcome || trade.outcome || 'pending');
+    setInputValue('trade-comments', notes.comments || trade.comments || trade.partialCloseReason || '');
+    setInputValue('trade-pnl-amount', notes.pnlAmount || trade.pnlAmount || '');
+    setInputValue('trade-pnl-currency', notes.pnlCurrency || trade.pnlCurrency || '');
+    setInputValue('trade-review-notes', notes.reviewNotes || trade.reviewNotes || '');
+    applyNodeCommentsToInputs(notes.nodeComments || trade.nodeComments || {});
+
+    const tradeSetupId = String(
+      trade.setupId
+      || (setupSnapshot && (setupSnapshot.id || setupSnapshot._id))
+      || getCurrentSetupId()
+      || ''
+    ).trim();
+    const setupScopedMedia = trade.mediaBySetup
+      && typeof trade.mediaBySetup === 'object'
+      && tradeSetupId
+      && trade.mediaBySetup[tradeSetupId]
+      ? trade.mediaBySetup[tradeSetupId]
+      : null;
+
+    restoreMediaFromPayload(setupScopedMedia || trade.media);
+
+    calcRR();
+    updateProgress();
+    switchTab('pretrade');
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tab-btn-pretrade').classList.toggle('active', tab === 'pretrade');
+    document.getElementById('tab-btn-posttrade').classList.toggle('active', tab === 'posttrade');
+    document.getElementById('tab-pretrade').classList.toggle('active', tab === 'pretrade');
+    document.getElementById('tab-posttrade').classList.toggle('active', tab === 'posttrade');
+    const riskTool = document.getElementById('risk-tool');
+    if (riskTool) {
+      riskTool.style.display = tab === 'pretrade' ? '' : 'none';
+    }
+  }
+
+  function getBucket(section) {
+    if (!mediaBuckets[section]) mediaBuckets[section] = [];
+    return mediaBuckets[section];
+  }
+
+  function openMediaPicker(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) input.click();
+  }
+
+  function getInputValue(id, fallback) {
+    const element = document.getElementById(id);
+    if (!element || element.value == null) return fallback || '';
+    return element.value;
+  }
+
+  function setInputValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.value = value == null ? '' : value;
+    }
+  }
+
+  function getNowLocalDateTimeValue() {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function getRiskSpec(rawInstrument) {
+    const normalized = String(rawInstrument || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const aliasMap = {
+      XAU: 'XAUUSD',
+      GOLD: 'XAUUSD',
+      EURUSDM: 'EURUSD',
+      GBPUSDM: 'GBPUSD',
+      USDJPYM: 'USDJPY',
+      NAS: 'NAS100',
+      US100: 'NAS100',
+      NAS100USD: 'NAS100',
+      US30USD: 'US30'
+    };
+    const canonical = aliasMap[normalized] || normalized;
+    return RISK_SPEC_MAP[canonical] || { pointSize: 1, valuePerOneMovePerLot: 1, lotStep: 0.01, isFallback: true };
+  }
+
+  function resolveValuePerOneMove(spec, entryPrice) {
+    if (!spec || typeof spec !== 'object') return 1;
+    if (spec.valuePerOneMovePerLot === 'usd-jpy-dynamic') {
+      if (!Number.isFinite(entryPrice) || entryPrice <= 0) return 1;
+      return 100000 / entryPrice;
+    }
+    return Number(spec.valuePerOneMovePerLot || 1);
+  }
+
+  function formatRiskNumber(value, maxDecimals) {
+    if (!Number.isFinite(value)) return '-';
+    const fixed = Number(value).toFixed(Math.max(0, maxDecimals || 0));
+    return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  }
+
+  function setRiskStatus(message, isWarning) {
+    const status = document.getElementById('risk-status');
+    if (!status) return;
+    status.textContent = message || '';
+    status.classList.toggle('warn', !!isWarning);
+  }
+
+  function setRiskOutput(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  }
+
+  function inferDirectionFromEntryAndSl(entry, sl) {
+    if (!Number.isFinite(entry) || !Number.isFinite(sl) || entry === sl) return null;
+    return sl < entry ? 'long' : 'short';
+  }
+
+  function copyTradeValuesToRiskCalc() {
+    setInputValue('risk-instrument', getInputValue('trade-instrument').trim());
+    setInputValue('risk-entry', getInputValue('entry').trim());
+    setInputValue('risk-sl', getInputValue('sl').trim());
+
+    const entry = parseFloat(getInputValue('risk-entry'));
+    const sl = parseFloat(getInputValue('risk-sl'));
+    const inferredDirection = inferDirectionFromEntryAndSl(entry, sl);
+    if (inferredDirection) {
+      setInputValue('risk-direction', inferredDirection);
+    }
+
+    calculateRiskLots();
+    persistRiskCalculatorPrefs();
+  }
+
+  function persistRiskCalculatorPrefs() {
+    const payload = {
+      instrument: getInputValue('risk-instrument').trim(),
+      direction: getInputValue('risk-direction', 'long') || 'long',
+      riskPercent: getInputValue('risk-percent').trim(),
+      accountSize: getInputValue('risk-account').trim(),
+      isOpen: document.getElementById('risk-tool')
+        ? document.getElementById('risk-tool').classList.contains('open')
+        : false,
+    };
+    localStorage.setItem(RISK_PREFS_KEY, JSON.stringify(payload));
+  }
+
+  function loadRiskCalculatorPrefs() {
+    try {
+      const raw = localStorage.getItem(RISK_PREFS_KEY);
+      if (!raw) return;
+      const prefs = JSON.parse(raw);
+      if (!prefs || typeof prefs !== 'object') return;
+
+      setInputValue('risk-instrument', prefs.instrument || '');
+      setInputValue('risk-direction', prefs.direction || 'long');
+      setInputValue('risk-percent', prefs.riskPercent || '1');
+      setInputValue('risk-account', prefs.accountSize || '');
+      setRiskToolOpen(!!prefs.isOpen);
+    } catch (err) {
+      // Ignore malformed local storage payload.
+    }
+  }
+
+  function setRiskToolOpen(isOpen) {
+    const panel = document.getElementById('risk-tool');
+    const toggle = document.getElementById('risk-tool-toggle');
+    if (!panel || !toggle) return;
+    panel.classList.toggle('open', !!isOpen);
+    toggle.textContent = isOpen ? 'Risk Calculator -' : 'Risk Calculator +';
+  }
+
+  function toggleRiskTool() {
+    const panel = document.getElementById('risk-tool');
+    if (!panel) return;
+    setRiskToolOpen(!panel.classList.contains('open'));
+    persistRiskCalculatorPrefs();
+  }
+
+  function calculateRiskLots() {
+    const accountSize = parseFloat(getInputValue('risk-account'));
+    const riskPercent = parseFloat(getInputValue('risk-percent'));
+    const entry = parseFloat(getInputValue('risk-entry'));
+    const sl = parseFloat(getInputValue('risk-sl'));
+    const direction = getInputValue('risk-direction', 'long') || 'long';
+    const instrument = getInputValue('risk-instrument').trim();
+
+    if (!Number.isFinite(accountSize) || !Number.isFinite(riskPercent) || !Number.isFinite(entry) || !Number.isFinite(sl)) {
+      setRiskStatus('Fill account, risk %, entry and SL', false);
+      setRiskOutput('risk-amount', '-');
+      setRiskOutput('risk-distance', '-');
+      setRiskOutput('risk-pips', '-');
+      setRiskOutput('risk-lots', '-');
+      return;
+    }
+
+    const stopDistance = Math.abs(entry - sl);
+    if (stopDistance <= 0) {
+      setRiskStatus('Entry and SL must be different', true);
+      setRiskOutput('risk-amount', '-');
+      setRiskOutput('risk-distance', '-');
+      setRiskOutput('risk-pips', '-');
+      setRiskOutput('risk-lots', '-');
+      return;
+    }
+
+    if (accountSize <= 0 || riskPercent <= 0) {
+      setRiskStatus('Account size and risk % must be greater than 0', true);
+      setRiskOutput('risk-amount', '-');
+      setRiskOutput('risk-distance', '-');
+      setRiskOutput('risk-pips', '-');
+      setRiskOutput('risk-lots', '-');
+      return;
+    }
+
+    const directionMismatch = (direction === 'long' && sl >= entry) || (direction === 'short' && sl <= entry);
+    if (directionMismatch) {
+      setRiskStatus('Direction does not match entry/SL structure', true);
+    } else {
+      setRiskStatus('', false);
+    }
+
+    const riskAmount = accountSize * (riskPercent / 100);
+    const spec = getRiskSpec(instrument);
+    const pointSize = Number(spec.pointSize || 1);
+    const valuePerOneMove = resolveValuePerOneMove(spec, entry);
+    const stopPoints = pointSize > 0 ? (stopDistance / pointSize) : stopDistance;
+    const riskPerLot = stopDistance * valuePerOneMove;
+    const lotsRaw = riskPerLot > 0 ? (riskAmount / riskPerLot) : 0;
+    const lotStep = Number(spec.lotStep || 0.01);
+    const lotsRounded = Math.max(0, Math.floor(lotsRaw / lotStep) * lotStep);
+
+    if (spec.isFallback) {
+      setRiskStatus('Using generic contract model. Set known instrument symbol for better accuracy.', true);
+    } else if (!directionMismatch) {
+      setRiskStatus('', false);
+    }
+
+    setRiskOutput('risk-amount', formatRiskNumber(riskAmount, 2));
+    setRiskOutput('risk-distance', formatRiskNumber(stopDistance, 5));
+    setRiskOutput('risk-pips', formatRiskNumber(stopPoints, 2));
+    setRiskOutput('risk-lots', formatRiskNumber(lotsRounded, 2));
+  }
+
+  function initRiskCalculator() {
+    setRiskToolOpen(false);
+    loadRiskCalculatorPrefs();
+
+    ['risk-instrument', 'risk-direction', 'risk-percent', 'risk-account', 'risk-entry', 'risk-sl'].forEach(function (id) {
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.addEventListener('input', function () {
+        calculateRiskLots();
+        persistRiskCalculatorPrefs();
+      });
+      element.addEventListener('change', function () {
+        calculateRiskLots();
+        persistRiskCalculatorPrefs();
+      });
+    });
+
+    const mainTradeInputIds = ['trade-instrument', 'entry', 'sl'];
+    mainTradeInputIds.forEach(function (id) {
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.addEventListener('input', function () {
+        if (!getInputValue('risk-entry') && id === 'entry') setInputValue('risk-entry', getInputValue('entry'));
+        if (!getInputValue('risk-sl') && id === 'sl') setInputValue('risk-sl', getInputValue('sl'));
+        if (!getInputValue('risk-instrument') && id === 'trade-instrument') setInputValue('risk-instrument', getInputValue('trade-instrument'));
+        calculateRiskLots();
+      });
+    });
+
+    copyTradeValuesToRiskCalc();
+    if (!getInputValue('risk-percent')) {
+      setInputValue('risk-percent', '1');
+    }
+    calculateRiskLots();
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function renderMedia(section) {
+    const bucket = getBucket(section);
+    const grid = document.getElementById('media-grid-' + section);
+    const status = document.getElementById('media-status-' + section);
+    if (!grid || !status) return;
+
+    status.textContent = bucket.length + (bucket.length === 1 ? ' file attached' : ' files attached');
+
+    if (bucket.length === 0) {
+      grid.innerHTML = '<div class="empty-media">No media attached yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = bucket.map((item, idx) => {
+      const isNewFile = item && item.file instanceof File;
+      const uploadedBadge = isNewFile ? '' : '<span class="media-uploaded-badge">Uploaded</span>';
+      const preview = item.file.type.startsWith('video/')
+        ? '<video src="' + item.url + '" muted controls preload="metadata"></video>'
+        : '<img src="' + item.url + '" alt="Trade media preview" loading="lazy"/>';
+
+      return '<div class="media-card">'
+        + uploadedBadge
+        + '<button class="remove-media" type="button" onclick="removeMedia(\'' + section + '\',' + idx + ')" aria-label="Remove media">×</button>'
+        + preview
+        + '<div class="media-meta">'
+        + '<div class="media-name">' + item.file.name + '</div>'
+        + '<div class="media-size">' + formatBytes(item.file.size) + '</div>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  function handleMediaSelect(event, section) {
+    const files = Array.from(event.target.files || []);
+    addMediaFiles(files, section);
+    event.target.value = '';
+  }
+
+  function addMediaFiles(files, section) {
+    const bucket = getBucket(section);
+    files.forEach(file => {
+      if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+        bucket.push({ file, url: URL.createObjectURL(file), dataUrl: null });
+      }
+    });
+    renderMedia(section);
+  }
+
+  function getPasteSection() {
+    syncMediaBucketsFromDom();
+    if (lastMediaSection) return lastMediaSection;
+
+    const focused = document.activeElement;
+    if (focused) {
+      const block = focused.closest('[data-media-section]');
+      if (block && block.dataset.mediaSection) return block.dataset.mediaSection;
+    }
+
+    const sections = Object.keys(mediaBuckets);
+    if (activeTab === 'posttrade') {
+      if (sections.includes('real')) return 'real';
+      return sections[0] || 'real';
+    }
+
+    return sections[0] || 'real';
+  }
+
+  function handlePasteMedia(event) {
+    if (!event.clipboardData) return;
+
+    const files = [];
+    Array.from(event.clipboardData.items || []).forEach(item => {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+    });
+
+    if (files.length === 0) return;
+    event.preventDefault();
+    addMediaFiles(files, getPasteSection());
+  }
+
+  function removeMedia(section, index) {
+    const bucket = getBucket(section);
+    const removed = bucket.splice(index, 1)[0];
+    if (removed) URL.revokeObjectURL(removed.url);
+    renderMedia(section);
+  }
+
+  function clearMedia(section) {
+    if (section) {
+      const bucket = getBucket(section);
+      bucket.forEach(item => {
+        if (item && typeof item.url === 'string' && item.url.startsWith('blob:')) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
+      bucket.length = 0;
+      const input = document.getElementById('media-input-' + section);
+      if (input) input.value = '';
+      renderMedia(section);
+      return;
+    }
+
+    Object.keys(mediaBuckets).forEach(key => clearMedia(key));
+  }
+
+  function toggle(el) {
+    const evt = (typeof window !== 'undefined' && window.event) ? window.event : null;
+    if (evt && evt.target && typeof evt.target.closest === 'function') {
+      const clickedItem = evt.target.closest('.check-item');
+      if (clickedItem && clickedItem !== el) {
+        return;
+      }
+      if (typeof evt.stopPropagation === 'function') {
+        evt.stopPropagation();
+      }
+    }
+
+    el.classList.toggle('checked');
+    const c = colorMap[el.dataset.color] || colorMap.green;
+    el.style.setProperty('--item-color', c.color);
+    el.style.setProperty('--item-bg', c.bg);
+    el.style.setProperty('--item-border', c.border);
+    updateProgress();
+  }
+
+  function setBias(bias) {
+    currentBias = bias;
+    const shortBtn = document.getElementById('btn-short');
+    const longBtn = document.getElementById('btn-long');
+    const shortItems = document.getElementById('short-items');
+    const longItems = document.getElementById('long-items');
+
+    if (shortBtn) shortBtn.className = 'bias-btn' + (bias === 'short' ? ' active-short' : '');
+    if (longBtn) longBtn.className  = 'bias-btn' + (bias === 'long'  ? ' active-long'  : '');
+    if (shortItems) shortItems.style.display = bias === 'short' ? 'block' : 'none';
+    if (longItems) longItems.style.display  = bias === 'long'  ? 'block' : 'none';
+
+    // Uncheck hidden bias items
+    const hideId = bias === 'short' ? 'long-items' : 'short-items';
+    const hideGroup = document.getElementById(hideId);
+    if (hideGroup) {
+      hideGroup.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
+    }
+    updateProgress();
+  }
+
+  function getVisibleItems() {
+    return Array.from(document.querySelectorAll('.check-item')).filter(el => {
+      return !!(el.offsetParent || el.getClientRects().length);
+    });
+  }
+
+  function getBranchSelections() {
+    const sectionBranches = {};
+    const conditionBranches = {};
+
+    document.querySelectorAll('.section-direction-btn.active[data-section-branch-btn]').forEach(function (btn) {
+      const key = String(btn.getAttribute('data-section-branch-btn') || '');
+      if (key.endsWith('-then')) {
+        sectionBranches[key.slice(0, -5)] = 'then';
+      } else if (key.endsWith('-else')) {
+        sectionBranches[key.slice(0, -5)] = 'else';
+      }
+    });
+
+    document.querySelectorAll('.branch-switch-btn.active[data-branch-btn]').forEach(function (btn) {
+      const key = String(btn.getAttribute('data-branch-btn') || '');
+      if (key.endsWith('-then')) {
+        conditionBranches[key.slice(0, -5)] = 'then';
+      } else if (key.endsWith('-else')) {
+        conditionBranches[key.slice(0, -5)] = 'else';
+      }
+    });
+
+    return {
+      sections: sectionBranches,
+      conditions: conditionBranches,
+    };
+  }
+
+  function applyBranchSelections(selections) {
+    if (!selections || typeof selections !== 'object') return;
+
+    const sectionBranches = selections.sections && typeof selections.sections === 'object'
+      ? selections.sections
+      : {};
+    const conditionBranches = selections.conditions && typeof selections.conditions === 'object'
+      ? selections.conditions
+      : {};
+
+    Object.keys(sectionBranches).forEach(function (switchId) {
+      const branch = sectionBranches[switchId] === 'else' ? 'else' : 'then';
+      toggleSectionBranch(null, switchId, branch);
+    });
+
+    Object.keys(conditionBranches).forEach(function (groupId) {
+      const branch = conditionBranches[groupId] === 'else' ? 'else' : 'then';
+      toggleConditionBranch(null, groupId, branch);
+    });
+  }
+
+  function updateProgress() {
+    const items = getVisibleItems();
+    const total = items.length;
+    const checked = items.filter(el => el.classList.contains('checked')).length;
+    document.getElementById('checked-count').textContent = checked;
+    document.getElementById('total-count').textContent = total;
+    const pct = total > 0 ? (checked / total) * 100 : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+
+    const ready = document.getElementById('ready-banner');
+    const notReady = document.getElementById('not-ready-banner');
+
+    if (checked === total && total > 0) {
+      ready.classList.add('visible');
+      notReady.classList.remove('visible');
+      document.getElementById('timestamp').textContent = 'Confirmed: ' + new Date().toLocaleTimeString();
+    } else if (checked > 0) {
+      ready.classList.remove('visible');
+      notReady.classList.add('visible');
+      document.getElementById('timestamp').textContent = '';
+    } else {
+      ready.classList.remove('visible');
+      notReady.classList.remove('visible');
+      document.getElementById('timestamp').textContent = '';
+    }
+  }
+
+  function calcRR() {
+    const entry = parseFloat(getInputValue('entry'));
+    const sl    = parseFloat(getInputValue('sl'));
+    const lrl   = parseFloat(getInputValue('lrl'));
+    const display = document.getElementById('rr-display');
+
+    if (isNaN(entry) || isNaN(sl)) { display.style.display = 'none'; return; }
+
+    const risk = Math.abs(entry - sl);
+    if (risk === 0) { display.style.display = 'none'; return; }
+
+    const isShort = entry > sl;
+    const tp2r = isShort ? entry - 2 * risk : entry + 2 * risk;
+
+    display.style.display = 'flex';
+    document.getElementById('rr-tp').textContent = tp2r.toFixed(5);
+
+    if (!isNaN(lrl)) {
+      document.getElementById('rr-lrl').textContent = lrl.toFixed(5);
+      // Whichever is closer to entry
+      const distTo2R  = Math.abs(tp2r - entry);
+      const distToLRL = Math.abs(lrl  - entry);
+      const useLRL = distToLRL < distTo2R;
+      document.getElementById('rr-use').textContent = useLRL ? lrl.toFixed(5) + ' (LRL)' : tp2r.toFixed(5) + ' (2R)';
+      document.getElementById('rr-use').style.color = useLRL ? 'var(--amber)' : 'var(--green)';
+    } else {
+      document.getElementById('rr-lrl').textContent = '—';
+      document.getElementById('rr-use').textContent = tp2r.toFixed(5) + ' (2R)';
+      document.getElementById('rr-use').style.color = 'var(--green)';
+    }
+  }
+
+  function resetAll() {
+    document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
+    activeTradeRecordId = null;
+    activeTradeCreatedAt = null;
+    loadedFromWatchlist = false;
+    watchlistSourceId = '';
+    setInputValue('entry', '');
+    setInputValue('sl', '');
+    setInputValue('lrl', '');
+    setInputValue('trade-name', '');
+    setInputValue('trade-instrument', '');
+    setInputValue('trade-timestamp', getNowLocalDateTimeValue());
+    setInputValue('trade-state', 'placed');
+    setInputValue('trade-outcome', 'pending');
+    setInputValue('trade-comments', '');
+    setInputValue('trade-pnl-amount', '');
+    setInputValue('trade-pnl-currency', '');
+    setInputValue('trade-review-notes', '');
+    clearMedia();
+    const rrDisplay = document.getElementById('rr-display');
+    const readyBanner = document.getElementById('ready-banner');
+    const notReadyBanner = document.getElementById('not-ready-banner');
+    const timestamp = document.getElementById('timestamp');
+    if (rrDisplay) rrDisplay.style.display = 'none';
+    if (readyBanner) readyBanner.classList.remove('visible');
+    if (notReadyBanner) notReadyBanner.classList.remove('visible');
+    if (timestamp) timestamp.textContent = '';
+    copyTradeValuesToRiskCalc();
+    localStorage.removeItem(SOURCE_WATCHLIST_ID_KEY);
+    updateProgress();
+  }
+
+  async function initPage() {
+    initSidebarProfile();
+    document.addEventListener('paste', handlePasteMedia);
+    document.addEventListener('click', function(event) {
+      if (event.target.closest('#side-nav') === null && event.target.closest('.menu-toggle') === null) {
+        toggleSidebar(false);
+      }
+      const block = event.target.closest('[data-media-section]');
+      if (block && block.dataset.mediaSection) {
+        lastMediaSection = block.dataset.mediaSection;
+      }
+    });
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        toggleSidebar(false);
+      }
+    });
+
+    switchTab('pretrade');
+    setBias('short');
+    setInputValue('trade-timestamp', getNowLocalDateTimeValue());
+    initRiskCalculator();
+    const hasDefaultSetup = await enforceDefaultSetupForChecklist();
+    if (!hasDefaultSetup) {
+      return;
+    }
+
+    renderPostTradeChecklistBoard(hasDefaultSetup);
+
+    await loadTradeRecords();
+    syncMediaBucketsFromDom().forEach(function (section) {
+      renderMedia(section);
+    });
+    updateSetupStatus();
+
+    let loadedSelectedTrade = false;
+
+    const urlParams = new URLSearchParams(window.location.search || '');
+    const watchlistIdFromQuery = urlParams.get('loadWatchlistId');
+    if (watchlistIdFromQuery) {
+      try {
+        let watchlistItem = null;
+
+        if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.getWatchlist) {
+          const result = await FrontendAPI.getWatchlist(watchlistIdFromQuery);
+          watchlistItem = result && result.watchlist ? result.watchlist : null;
+        } else {
+          const watchlistRaw = localStorage.getItem('smc_watchlist_records_v1');
+          const watchlistList = watchlistRaw ? JSON.parse(watchlistRaw) : [];
+          if (Array.isArray(watchlistList)) {
+            watchlistItem = watchlistList.find(function (item) {
+              return String(item && item.id) === String(watchlistIdFromQuery);
+            }) || null;
+          }
+        }
+
+        if (watchlistItem) {
+          loadTradePayload(watchlistItem, { fromWatchlist: true, sourceWatchlistId: watchlistIdFromQuery });
+          loadedSelectedTrade = true;
+        }
+      } catch (watchlistErr) {
+        console.error('Could not load watchlist trade', watchlistErr);
+      }
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', 'index.html');
+      }
+
+      localStorage.removeItem(ACTIVE_TRADE_ID_KEY);
+    }
+
+    const activeTradeIdFromQuery = urlParams.get('loadTradeId');
+    const activeTradeIdRaw = activeTradeIdFromQuery || localStorage.getItem(ACTIVE_TRADE_ID_KEY);
+    if (activeTradeIdRaw && !loadedSelectedTrade) {
+      try {
+        let activeTrade = null;
+
+        if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.getTrade) {
+          try {
+            const result = await FrontendAPI.getTrade(activeTradeIdRaw);
+            activeTrade = result && result.trade ? result.trade : null;
+          } catch (fetchErr) {
+            activeTrade = null;
+          }
+        }
+
+        if (!activeTrade) {
+          activeTrade = tradeRecords.find(t => String(t.id) === String(activeTradeIdRaw));
+        }
+
+        if (activeTrade) {
+          loadTradePayload(activeTrade);
+          loadedSelectedTrade = true;
+        }
+      } catch (err) {
+        console.error('Could not load selected trade', err);
+      }
+      localStorage.removeItem(ACTIVE_TRADE_ID_KEY);
+      if (activeTradeIdFromQuery && window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', 'index.html');
+      }
+    }
+
+    const selectedTradePayloadRaw = localStorage.getItem(SELECTED_TRADE_PAYLOAD_KEY);
+    if (selectedTradePayloadRaw && !loadedSelectedTrade) {
+      try {
+        const selectedTradePayload = JSON.parse(selectedTradePayloadRaw);
+        if (selectedTradePayload && typeof selectedTradePayload === 'object') {
+          const tradeId = String(selectedTradePayload.id != null ? selectedTradePayload.id : '');
+          const sourceWatchlistId = String(selectedTradePayload.sourceWatchlistId || localStorage.getItem(SOURCE_WATCHLIST_ID_KEY) || '').trim();
+          const fromWatchlist = selectedTradePayload.__fromWatchlist === true || sourceWatchlistId !== '';
+          const matchedTrade = tradeId ? tradeRecords.find(t => String(t.id) === tradeId) : null;
+
+          if (matchedTrade) {
+            loadTradePayload(Object.assign({}, matchedTrade, selectedTradePayload), {
+              fromWatchlist: fromWatchlist,
+              sourceWatchlistId: sourceWatchlistId
+            });
+            loadedSelectedTrade = true;
+          } else if (!loadedSelectedTrade) {
+            loadTradePayload(selectedTradePayload, {
+              fromWatchlist: fromWatchlist,
+              sourceWatchlistId: sourceWatchlistId
+            });
+            loadedSelectedTrade = true;
+          }
+        }
+      } catch (err) {
+        console.error('Could not load selected trade payload', err);
+      }
+      localStorage.removeItem(SELECTED_TRADE_PAYLOAD_KEY);
+    }
+
+    const activeTradeRaw = localStorage.getItem(ACTIVE_TRADE_KEY);
+    if (activeTradeRaw) {
+      localStorage.removeItem(ACTIVE_TRADE_KEY);
+    }
+
+    updateProgress();
+  }
+
+  initPage();
+</script>
+</body>
+</html>

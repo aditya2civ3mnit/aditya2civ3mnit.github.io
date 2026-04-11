@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In</title>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --blue: #5090e0;
+    --green: #52c77a;
+    --red: #f07060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 20% 20%, #13203a 0%, var(--bg) 45%), var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+
+  .card {
+    width: min(430px, 100%);
+    background: linear-gradient(180deg, rgba(24, 28, 34, 0.95), rgba(17, 20, 24, 0.95));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e7edf7;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.45;
+  }
+
+  .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #aab8cc;
+    margin-bottom: 14px;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: rgba(17, 20, 24, 0.7);
+  }
+
+  label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 10px 0 6px;
+  }
+
+  input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    color: var(--text);
+    padding: 11px 12px;
+    font-size: 13px;
+    outline: none;
+  }
+
+  input:focus { border-color: var(--blue); }
+
+  button {
+    width: 100%;
+    margin-top: 14px;
+    border: 1px solid #2b4f84;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #204170, #163157);
+    color: #e5efff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 11px;
+    cursor: pointer;
+  }
+
+  button:disabled { opacity: 0.6; cursor: wait; }
+
+  .message {
+    margin-top: 12px;
+    font-size: 12px;
+    min-height: 18px;
+  }
+
+  .divider {
+    margin: 14px 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .google-wrap {
+    margin-top: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(17, 20, 24, 0.65);
+  }
+
+  .google-btn {
+    margin-top: 0;
+    background: linear-gradient(180deg, #2c3e57, #1d2b41);
+    border-color: #3c5576;
+  }
+
+  .google-note {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .ok { color: var(--green); }
+  .err { color: var(--red); }
+
+  .demo {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .support {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .support a {
+    color: #9ec3ff;
+    text-decoration: none;
+    border-bottom: 1px dotted #446ea8;
+  }
+
+  .support a:hover {
+    color: #c8deff;
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1 class="title">Sign In</h1>
+    <p class="subtitle">Sign in using your online account connected to backend API.</p>
+
+    <div id="mode-meta" class="meta"></div>
+
+    <form id="signin-form">
+      <label for="username">Username</label>
+      <input id="username" type="text" autocomplete="username" required/>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required/>
+
+      <button id="signin-btn" type="submit">Sign In</button>
+    </form>
+
+    <div class="divider">Or</div>
+    <div class="google-wrap">
+      <button id="google-start-btn" class="google-btn" type="button">Continue with Google</button>
+      <div id="google-signin-note" class="google-note"></div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <div class="demo">
+      If sign-in fails, ensure backend server and database are running.
+    </div>
+
+    <div class="support">
+      Need help? Contact <a id="support-link" href="mailto:support@example.com">support@example.com</a>.
+    </div>
+  </main>
+
+<script>
+  const env = window.APP_ENV || {};
+  const form = document.getElementById('signin-form');
+  const msg = document.getElementById('message');
+  const btn = document.getElementById('signin-btn');
+  const googleBtn = document.getElementById('google-start-btn');
+  const supportLink = document.getElementById('support-link');
+  const modeMeta = document.getElementById('mode-meta');
+  const googleNote = document.getElementById('google-signin-note');
+  const existingSession = window.FrontendAPI && FrontendAPI.getSession ? FrontendAPI.getSession() : null;
+  const callbackParams = new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+  const callbackSession = {
+    mode: callbackParams.get('mode') || '',
+    userId: callbackParams.get('userId') || '',
+    username: callbackParams.get('username') || '',
+    name: callbackParams.get('name') || '',
+    email: callbackParams.get('email') || '',
+    token: callbackParams.get('token') || '',
+    refreshToken: callbackParams.get('refreshToken') || ''
+  };
+
+  function updateModeUi() {
+    modeMeta.textContent = 'Mode: Backend API at ' + (env.API_BASE_URL || 'http://localhost:3000');
+
+    if (supportLink) {
+      const supportEmail = String(env.SUPPORT_EMAIL || 'support@example.com').trim();
+      supportLink.href = 'mailto:' + supportEmail;
+      supportLink.textContent = supportEmail;
+    }
+  }
+
+  async function ensureApiMode() {
+    if (!(window.FrontendAPI && FrontendAPI.enableApiMode)) return;
+    await FrontendAPI.enableApiMode();
+  }
+
+  function setMessage(text, isError) {
+    msg.textContent = text;
+    msg.className = 'message ' + (isError ? 'err' : 'ok');
+  }
+
+  function setGoogleNote(text, isError) {
+    if (!googleNote) return;
+    googleNote.textContent = text || '';
+    googleNote.style.color = isError ? 'var(--red)' : 'var(--muted)';
+  }
+
+  function saveSession(payload) {
+    if (window.FrontendAPI && FrontendAPI.setSession) {
+      FrontendAPI.setSession(payload);
+      return;
+    }
+
+    localStorage.setItem('auth_session', JSON.stringify(payload));
+  }
+
+  function startGoogleRedirect() {
+    try {
+      const base = String(env.API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+      setGoogleNote('Redirecting to Google...', false);
+      const returnTo = encodeURIComponent(window.location.origin);
+      window.location.href = base + '/api/auth/google/start?returnTo=' + returnTo;
+    } catch (error) {
+      setGoogleNote('Could not start Google sign in.', true);
+    }
+  }
+
+  function hasCallbackSession() {
+    return callbackSession.mode === 'api' && callbackSession.token && callbackSession.refreshToken;
+  }
+
+  function consumeCallbackSession() {
+    if (!hasCallbackSession()) {
+      return false;
+    }
+
+    saveSession(callbackSession);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    window.location.href = 'index.html';
+    return true;
+  }
+
+  if (window.location.hash && callbackParams.get('googleError')) {
+    const errorCode = callbackParams.get('googleError');
+    setTimeout(function () {
+      setGoogleNote('Google sign in failed: ' + errorCode, true);
+    }, 0);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  }
+
+  const callbackHandled = consumeCallbackSession();
+
+  if (!callbackHandled && existingSession && existingSession.mode === 'api') {
+    window.location.href = 'index.html';
+  }
+
+  updateModeUi();
+
+  form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    setMessage('', false);
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!username || !password) {
+      setMessage('Please enter username and password.', true);
+      return;
+    }
+
+    btn.disabled = true;
+
+    try {
+      await ensureApiMode();
+
+      const session = window.FrontendAPI && FrontendAPI.login
+        ? await FrontendAPI.login(username, password)
+        : null;
+
+      if (!session) {
+        throw new Error('Frontend API helper is not loaded');
+      }
+
+      saveSession(session);
+      setMessage('Sign in successful for ' + session.username, false);
+      window.location.href = 'index.html';
+    } catch (error) {
+      setMessage(error.message || 'Sign in failed.', true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  window.addEventListener('load', function () {
+    if (googleBtn) {
+      googleBtn.addEventListener('click', startGoogleRedirect);
+    }
+  });
+</script>
+</body>
+</html>

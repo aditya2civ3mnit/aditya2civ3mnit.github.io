@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Setup Canvas</title>
+<script>
+  (function() {
+    var session = localStorage.getItem('auth_session');
+    if (!session) {
+      window.location.replace('signin.html');
+    }
+  })();
+</script>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e242c;
+    --border2: #252c36;
+    --text: #c8d0da;
+    --muted: #667086;
+    --blue: #5090e0;
+    --blue-bg: #0f1828;
+    --green: #52c77a;
+    --green-bg: #0f1e14;
+    --amber: #f0a050;
+    --amber-bg: #1e1608;
+    --red: #ef6b6b;
+    --red-bg: #231314;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 10% 10%, rgba(27, 40, 66, 0.55), transparent 28%), linear-gradient(180deg, #090b0e 0%, #0a0c0f 100%);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    padding: 32px 16px 56px;
+  }
+
+  .container {
+    max-width: 1360px;
+    margin: 0 auto;
+  }
+
+  .menu-toggle {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1101;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    background: rgba(17, 20, 24, 0.95);
+    color: #dbe5f2;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .profile-shortcut {
+    position: fixed;
+    right: 14px;
+    top: 14px;
+    z-index: 1101;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    background: rgba(17, 20, 24, 0.95);
+    padding: 4px 10px 4px 4px;
+    color: #dbe5f2;
+    max-width: 170px;
+  }
+
+  .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #3866a5, #24487a);
+    border: 1px solid #3f5f8f;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5efff;
+  }
+
+  .profile-shortcut-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .side-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 10, 0.55);
+    z-index: 1098;
+    display: none;
+  }
+
+  .side-backdrop.open { display: block; }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, rgba(22, 27, 35, 0.98), rgba(14, 18, 24, 0.98));
+    border-right: 1px solid var(--border2);
+    padding: 56px 14px 14px;
+    z-index: 1099;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .side-nav.open { transform: translateX(0); }
+
+  .side-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #9fb0c8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .side-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    margin-bottom: 8px;
+    background: rgba(17, 20, 24, 0.86);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .side-link.active {
+    border-color: var(--blue);
+    color: #d7e6ff;
+    background: var(--blue-bg);
+  }
+
+  .side-main {
+    display: block;
+  }
+
+  .side-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border2);
+    padding-top: 12px;
+  }
+
+  .side-signout-btn {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    background: rgba(32, 18, 22, 0.82);
+    color: #f1beca;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .side-signout-btn:hover {
+    border-color: #8b3a4a;
+    color: #ffd7df;
+  }
+
+  .side-support-link {
+    display: block;
+    margin-top: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: #9ec3ff;
+    background: rgba(14, 23, 35, 0.84);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .side-support-link:hover {
+    border-color: #4a74ab;
+    color: #c8deff;
+  }
+
+  .header {
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 18px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px rgba(82, 199, 122, 0.7);
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e8edf3;
+  }
+
+  .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 14px 0 18px;
+  }
+
+  .btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+
+  .btn:hover { border-color: var(--blue); }
+
+  .btn.primary {
+    border-color: #2b4f84;
+    background: linear-gradient(180deg, #204170, #163157);
+    color: #e5efff;
+  }
+
+  .btn.good {
+    border-color: rgba(82, 199, 122, 0.35);
+    background: var(--green-bg);
+    color: #b9f2ca;
+  }
+
+  .btn.warn {
+    border-color: rgba(240, 160, 80, 0.35);
+    background: var(--amber-bg);
+    color: #ffd7a4;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 290px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .panel {
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(24, 28, 34, 0.93), rgba(17, 20, 24, 0.94));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .panel-head {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a8b6cc;
+  }
+
+  .panel-body {
+    padding: 14px;
+  }
+
+  .setup-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .setup-card {
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: rgba(17, 20, 24, 0.8);
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.12s;
+  }
+
+  .setup-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-1px);
+  }
+
+  .setup-card.active {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+  }
+
+  .setup-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .setup-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+
+  .badge {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--muted);
+  }
+
+  .badge.default {
+    color: #9bc3ff;
+    border-color: #3f5f8f;
+    background: rgba(26, 41, 65, 0.8);
+  }
+
+  .editor-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 16px;
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 10px 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  .checkline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .setup-options {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tab-btn {
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .tab-btn.active {
+    color: #dce6f3;
+    border-color: var(--blue);
+    background: var(--blue-bg);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .segment-list {
+    display: grid;
+    gap: 0;
+    position: relative;
+    padding: 8px 0 0;
+  }
+
+  .segment {
+    position: relative;
+    border: 1px solid rgba(80, 144, 224, 0.24);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at top left, rgba(80, 144, 224, 0.08), transparent 36%),
+      linear-gradient(180deg, rgba(20, 24, 31, 0.96), rgba(12, 15, 20, 0.96));
+    padding: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.03);
+    margin-bottom: 10px;
+  }
+
+  .segment-sticker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(106, 168, 255, 0.35);
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: linear-gradient(180deg, rgba(22, 35, 58, 0.98), rgba(13, 20, 32, 0.98));
+    color: #d8e7ff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    box-shadow: 0 0 0 5px rgba(80, 144, 224, 0.06);
+  }
+
+  .segment-sticker-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #7dc0ff, #3a6bc1);
+    box-shadow: 0 0 10px rgba(80, 144, 224, 0.55);
+  }
+
+  .segment-head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-left: 18px;
+  }
+
+  .segment-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a8b6cc;
+  }
+
+  .item-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .item {
+    position: relative;
+    border: 1px solid rgba(37, 44, 54, 0.9);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(13, 16, 21, 0.94), rgba(11, 14, 18, 0.96));
+    padding: 12px 12px 12px 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+
+  .item.dragging {
+    opacity: 0.45;
+  }
+
+  .item.drop-target {
+    border-color: rgba(80, 144, 224, 0.7);
+  }
+
+  .item.drop-target-before {
+    box-shadow: inset 0 2px 0 rgba(80, 144, 224, 0.95), 0 16px 40px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .item.drop-target-after {
+    box-shadow: inset 0 -2px 0 rgba(80, 144, 224, 0.95), 0 16px 40px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .item::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #7dc0ff, #3a6bc1);
+    box-shadow: 0 0 0 4px rgba(80, 144, 224, 0.08);
+  }
+
+  .item.nested {
+    margin-left: 18px;
+    border-left: 2px solid rgba(80, 144, 224, 0.26);
+  }
+
+  .node-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .node-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .drag-handle {
+    border: 1px solid var(--border2);
+    background: rgba(17, 20, 24, 0.9);
+    color: #9fb0c8;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: grab;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .node-move-btn {
+    border: 1px solid var(--border2);
+    background: rgba(17, 20, 24, 0.9);
+    color: #c8d0da;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .node-move-btn:hover,
+  .drag-handle:hover {
+    border-color: var(--blue);
+  }
+
+  .node-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--border2);
+    background: rgba(17, 20, 24, 0.9);
+  }
+
+  .node-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .node-actions .btn {
+    padding: 7px 9px;
+    font-size: 9px;
+  }
+
+  .branch-wrap {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    background: rgba(10, 12, 15, 0.55);
+  }
+
+  .branch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .branch-col {
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: rgba(12, 16, 22, 0.72);
+    padding: 8px;
+  }
+
+  .branch-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9fb0c8;
+    margin-bottom: 8px;
+  }
+
+  .node-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .node-children.empty {
+    margin-top: 0;
+  }
+
+  .item-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .workflow-canvas {
+    display: grid;
+    gap: 0;
+    padding: 6px 2px 10px 18px;
+    background:
+      radial-gradient(circle at 12px 12px, rgba(80, 144, 224, 0.07) 0, rgba(80, 144, 224, 0.07) 1px, transparent 1px) 0 0 / 22px 22px,
+      linear-gradient(180deg, rgba(9, 11, 14, 0.55), rgba(9, 11, 14, 0.18));
+    border: 1px solid rgba(37, 44, 54, 0.75);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .flow-connector {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+    height: 38px;
+    padding-left: 20px;
+    margin: -2px 0 6px;
+  }
+
+  .flow-connector-line {
+    height: 2px;
+    background: linear-gradient(90deg, rgba(80, 144, 224, 0.85), rgba(80, 144, 224, 0.18));
+    border-radius: 999px;
+  }
+
+  .flow-connector-arrow {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    border: 1px solid rgba(80, 144, 224, 0.26);
+    background: linear-gradient(180deg, rgba(22, 35, 58, 0.95), rgba(13, 20, 32, 0.95));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cfe0fb;
+    font-size: 13px;
+    box-shadow: 0 0 16px rgba(80, 144, 224, 0.12);
+  }
+
+  .flow-connector.last {
+    display: none;
+  }
+
+  .item-grid .field {
+    min-width: 0;
+  }
+
+  .item-desc {
+    min-height: 72px;
+    resize: vertical;
+  }
+
+  .empty {
+    border: 1px dashed var(--border2);
+    border-radius: 12px;
+    color: var(--muted);
+    padding: 18px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .message {
+    margin-top: 10px;
+    font-size: 12px;
+    min-height: 18px;
+  }
+
+  .ok { color: var(--green); }
+  .err { color: #ff8d8d; }
+
+  .summary {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: rgba(17, 20, 24, 0.72);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .preview-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(3, 6, 10, 0.78);
+    z-index: 1200;
+    padding: 20px;
+  }
+
+  .preview-modal.open {
+    display: flex;
+  }
+
+  .preview-card {
+    width: min(980px, 100%);
+    max-height: 88vh;
+    overflow: auto;
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(24, 28, 34, 0.98), rgba(17, 20, 24, 0.98));
+    padding: 14px;
+  }
+
+  .preview-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .preview-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #dbe5f2;
+  }
+
+  .preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .preview-col {
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: rgba(14, 17, 22, 0.82);
+    padding: 10px;
+  }
+
+  .preview-col-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9fb0c8;
+    margin-bottom: 10px;
+  }
+
+  .preview-segment {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .preview-segment-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .preview-item {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(11, 14, 18, 0.76);
+    padding: 8px;
+    margin-bottom: 6px;
+  }
+  .preview-item.nested {
+    margin-left: 12px;
+    border-left: 2px solid rgba(80, 144, 224, 0.2);
+  }
+
+  .preview-item-title {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .preview-item-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .preview-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .preview-nested {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .preview-branch {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    background: rgba(10, 12, 15, 0.5);
+  }
+
+  .preview-branch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .preview-branch-col {
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: rgba(12, 16, 22, 0.72);
+    padding: 8px;
+  }
+
+  .preview-branch-switch {
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .preview-branch-nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  .preview-branch-btn {
+    border: 1px solid var(--border2);
+    background: rgba(17, 20, 24, 0.9);
+    color: #8fa1ba;
+    border-radius: 8px;
+    padding: 8px 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .preview-branch-btn.active {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+    color: #cfe0fb;
+  }
+
+  .preview-branch-pane {
+    display: none;
+  }
+
+  .preview-branch-pane.active {
+    display: block;
+  }
+  .preview-branch-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9fb0c8;
+    margin-bottom: 8px;
+  }
+
+  .preview-tag {
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 2px 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9fb0c8;
+  }
+
+  @media (max-width: 980px) {
+    .preview-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 980px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .editor-head {
+      grid-template-columns: 1fr;
+    }
+
+    .segment-head,
+    .item-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .branch-grid,
+    .preview-branch-grid,
+    .preview-branch-switch {
+      grid-template-columns: 1fr;
+    }
+
+    .preview-branch-nav {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-toggle" type="button" onclick="toggleSidebar(true)">☰</button>
+<a class="profile-shortcut" href="profile.html" aria-label="Open profile settings">
+  <span class="profile-avatar" id="profile-shortcut-avatar">A</span>
+  <span class="profile-shortcut-name" id="profile-shortcut-name">Profile</span>
+</a>
+<div id="side-backdrop" class="side-backdrop" onclick="toggleSidebar(false)"></div>
+<nav id="side-nav" class="side-nav">
+  <div class="side-main">
+    <div class="side-title">Navigation</div>
+    <a class="side-link" href="index.html">Pre/Post Checklist</a>
+    <a class="side-link active" href="setups.html">Setup Canvas</a>
+    <a class="side-link" href="trades.html">List Of Trades</a>
+    <a class="side-link" href="watchlist.html">Watchlist</a>
+  </div>
+  <div class="side-footer">
+    <button class="side-signout-btn" type="button" onclick="signOutFromSidebar()">Sign Out</button>
+    <a class="side-support-link" href="mailto:support@example.com">Contact Support</a>
+  </div>
+</nav>
+
+<div class="container">
+  <header class="header">
+    <div class="title-row">
+      <div class="dot"></div>
+      <h1>Setup Canvas</h1>
+    </div>
+    <div class="subtitle">Build reusable checklist setups with pre-trade and post-trade tabs.</div>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn primary" type="button" onclick="createNewSetup()">New Setup</button>
+    <button class="btn" type="button" onclick="reloadSetups()">Reload Setups</button>
+    <button class="btn good" type="button" onclick="saveSetup()">Save Setup</button>
+    <button class="btn" type="button" onclick="viewSetup()">View Setup</button>
+    <button class="btn warn" type="button" onclick="loadIntoChecklist()">Load Into Checklist</button>
+    <button class="btn" type="button" onclick="setActiveAsDefault()">Set As Default</button>
+    <button class="btn" type="button" onclick="deleteCurrentSetup()">Delete</button>
+  </div>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-head">Saved Setups</div>
+      <div class="panel-body">
+        <div id="setup-list" class="setup-list"></div>
+        <div class="panel-head" style="margin:14px -14px 10px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">Suggested Setups</div>
+        <div id="suggested-setup-list" class="setup-list"></div>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <div class="panel-head">Editor</div>
+      <div class="panel-body">
+        <div class="editor-head">
+          <div>
+            <input id="setup-name" class="field" type="text" placeholder="Setup name"/>
+            <div class="setup-options">
+              <label class="checkline"><input id="setup-default" type="checkbox"/> Mark as default</label>
+            </div>
+          </div>
+          <div>
+            <div class="summary" id="setup-summary">No setup loaded.</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" id="tab-pretrade-btn" type="button" onclick="switchTab('pretrade')">Pre Trade Checklist</button>
+          <button class="tab-btn" id="tab-posttrade-btn" type="button" onclick="switchTab('posttrade')">Post Trade Checklist</button>
+        </div>
+
+        <section id="tab-pretrade" class="tab-panel active">
+          <div class="toolbar" style="margin-top:0;">
+            <button class="btn primary" type="button" onclick="addSegment('preTradeSegments')">Add Segment</button>
+            <button class="btn" type="button" onclick="addStarterSegment('preTradeSegments')">Add Starter Segment</button>
+          </div>
+          <div id="pretrade-segments" class="segment-list"></div>
+        </section>
+
+        <section id="tab-posttrade" class="tab-panel">
+          <div class="toolbar" style="margin-top:0;">
+            <button class="btn primary" type="button" onclick="addSegment('postTradeSegments')">Add Segment</button>
+            <button class="btn" type="button" onclick="addStarterSegment('postTradeSegments')">Add Starter Segment</button>
+          </div>
+          <div id="posttrade-segments" class="segment-list"></div>
+        </section>
+
+        <div id="message" class="message"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="preview-modal" class="preview-modal" onclick="closeSetupPreview(event)">
+  <div class="preview-card" role="dialog" aria-modal="true" aria-label="Setup Preview">
+    <div class="preview-head">
+      <div class="preview-title" id="preview-setup-title">Setup Preview</div>
+      <button class="btn" type="button" onclick="closeSetupPreview()">Close</button>
+    </div>
+    <div id="preview-content" class="preview-grid"></div>
+  </div>
+</div>
+
+<script>
+  const LOCAL_STORAGE_KEY = 'smc_saved_setups_v1';
+  const ACTIVE_SETUP_KEY = 'smc_active_setup_v1';
+  const ACTIVE_SETUP_ID_KEY = 'smc_active_setup_id_v1';
+
+  let savedSetups = [];
+  let suggestedSetups = [];
+  let activeSetup = null;
+  let activeTab = 'pretrade';
+  let defaultCheckboxTouched = false;
+  let draggedWorkflowNode = null;
+
+  const starterSegments = {
+    preTradeSegments: [
+      {
+        id: 'trend-filter',
+        title: 'Trend Filter',
+        items: [
+          { id: 'ema-20-50', title: '20 EMA is aligned with 50 EMA', description: 'Use this as your trend confirmation before entry.', required: true },
+          { id: 'ema-direction', title: 'Price is respecting the EMA direction', description: 'Price should be above or below the moving average stack for bias alignment.', required: true },
+          { id: 'ema-pullback', title: 'Pullback into EMA support or resistance', description: 'Wait for a clean pullback instead of chasing extension.', required: false }
+        ]
+      },
+      {
+        id: 'location-and-triggers',
+        title: 'Location and Trigger',
+        items: [
+          { id: 'vwap-tap', title: 'Price is tapping VWAP or a key mean-reversion line', description: 'Look for the market to interact with VWAP before taking the setup.', required: true },
+          { id: 'liquidity-sweep', title: 'Liquidity sweep or rejection has formed', description: 'Use the sweep or rejection as the trigger area.', required: true },
+          { id: 'entry-set', title: 'Entry is planned with risk defined', description: 'Entry, stop loss, and target are defined before execution.', required: true }
+        ]
+      }
+    ],
+    postTradeSegments: [
+      {
+        id: 'post-trade-analysis',
+        title: 'Execution Analysis',
+        items: [
+          { id: 'planned-vs-real', title: 'Planned vs real execution compared', description: 'Compare the setup against actual execution.', required: true },
+          { id: 'lesson-recorded', title: 'Lesson recorded', description: 'Capture the improvement point.', required: true }
+        ]
+      },
+      {
+        id: 'post-trade-media-review',
+        title: 'Media Review and Notes',
+        items: [
+          { id: 'screenshot-reviewed', title: 'Screenshots reviewed', description: 'Review the screenshots against the planned setup.', required: true },
+          { id: 'notes-complete', title: 'Journal notes completed', description: 'Write the exact reason the trade worked or failed.', required: true },
+          { id: 'next-step', title: 'Next improvement step is defined', description: 'Turn the review into a clear actionable change.', required: false }
+        ]
+      }
+    ]
+  };
+
+  function toggleSidebar(open) {
+    const nav = document.getElementById('side-nav');
+    const backdrop = document.getElementById('side-backdrop');
+    if (!nav || !backdrop) return;
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+  }
+
+  function getSidebarSession() {
+    if (window.FrontendAPI && FrontendAPI.getSession) {
+      return FrontendAPI.getSession() || null;
+    }
+
+    try {
+      const raw = localStorage.getItem('auth_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function initSidebarProfile() {
+    const profile = document.getElementById('profile-shortcut-name');
+    const avatar = document.getElementById('profile-shortcut-avatar');
+    if (!profile || !avatar) return;
+    const session = getSidebarSession();
+    const label = session && (session.name || session.username || session.userId)
+      ? String(session.name || session.username || session.userId)
+      : 'Trader';
+    profile.textContent = label;
+    avatar.textContent = String(label).trim().slice(0, 1).toUpperCase() || 'A';
+  }
+
+  async function signOutFromSidebar() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.logout) {
+        await FrontendAPI.logout();
+      } else {
+        localStorage.removeItem('auth_session');
+      }
+    } catch (err) {
+      localStorage.removeItem('auth_session');
+    }
+
+    window.location.replace('signin.html');
+  }
+
+  function getMode() {
+    if (window.FrontendAPI && FrontendAPI.getMode) {
+      return FrontendAPI.getMode();
+    }
+    return 'local';
+  }
+
+  function uuid(prefix) {
+    return prefix + '-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
+  }
+
+  function cloneSetup(setup) {
+    return JSON.parse(JSON.stringify(setup || {}));
+  }
+
+  function createEmptySetup() {
+    return normalizeSetup({
+      id: null,
+      name: 'New Setup',
+      isDefault: false,
+      preTradeSegments: cloneSetup(starterSegments.preTradeSegments),
+      postTradeSegments: cloneSetup(starterSegments.postTradeSegments)
+    });
+  }
+
+  function normalizeSetup(setup) {
+    const source = setup && typeof setup === 'object' ? setup : {};
+    const resolvedId = source.id != null ? source.id : source._id;
+    return {
+      id: resolvedId != null ? String(resolvedId) : null,
+      name: String(source.name || 'Untitled Setup').trim() || 'Untitled Setup',
+      isDefault: source.isDefault === true,
+      preTradeSegments: ensureSegmentIds(Array.isArray(source.preTradeSegments) ? source.preTradeSegments : [], 'preTradeSegments'),
+      postTradeSegments: ensureSegmentIds(Array.isArray(source.postTradeSegments) ? source.postTradeSegments : [], 'postTradeSegments')
+    };
+  }
+
+  function getCurrentSetup() {
+    if (!activeSetup) {
+      activeSetup = createEmptySetup();
+    }
+    return activeSetup;
+  }
+
+  function setMessage(text, isError) {
+    const message = document.getElementById('message');
+    message.textContent = text || '';
+    message.className = 'message ' + (isError ? 'err' : 'ok');
+  }
+
+  function setupSummary() {
+    const setup = getCurrentSetup();
+    const preSegments = setup.preTradeSegments.length;
+    const preItems = countWorkflowNodes(setup.preTradeSegments);
+    const postSegments = setup.postTradeSegments.length;
+    const postItems = countWorkflowNodes(setup.postTradeSegments);
+
+    return [
+      'Pre trade: ' + preSegments + ' segment(s), ' + preItems + ' item(s)',
+      'Post trade: ' + postSegments + ' segment(s), ' + postItems + ' item(s)',
+      setup.isDefault ? 'This setup is marked as default.' : 'This setup is not the default.'
+    ].join('<br/>');
+  }
+
+  function ensureNodeList(nodeList, prefix) {
+    return (Array.isArray(nodeList) ? nodeList : []).map(function (node, index) {
+      const next = cloneSetup(node);
+      next.id = next.id || uuid(prefix + '-node-' + (index + 1));
+      next.nodeType = String(next.nodeType || next.type || 'check').trim() || 'check';
+      next.title = String(next.title || '').trim() || 'Checklist item ' + (index + 1);
+      next.ifTitle = String(next.ifTitle || 'If').trim() || 'If';
+      next.elseTitle = String(next.elseTitle || 'Else').trim() || 'Else';
+      next.description = String(next.description || '');
+      next.required = next.required !== false;
+      next.allowMedia = next.allowMedia !== false;
+      next.children = ensureNodeList(next.children, next.id + '-children');
+      const branches = next.branches && typeof next.branches === 'object' ? next.branches : {};
+      next.branches = {
+        then: ensureNodeList(branches.then, next.id + '-then'),
+        else: ensureNodeList(branches.else, next.id + '-else')
+      };
+      return next;
+    });
+  }
+
+  function ensureSegmentIds(segmentList, prefix) {
+    return (Array.isArray(segmentList) ? segmentList : []).map(function (segment, index) {
+      const next = cloneSetup(segment);
+      next.id = next.id || uuid(prefix + '-segment-' + (index + 1));
+      next.title = String(next.title || '').trim() || 'Segment ' + (index + 1);
+      next.items = ensureNodeList(next.items, next.id + '-items');
+      return next;
+    });
+  }
+
+  function mergeWorkflowNodes(previousNodes, nextNodes) {
+    const previousList = Array.isArray(previousNodes) ? previousNodes : [];
+    const nextList = Array.isArray(nextNodes) ? nextNodes : [];
+    const previousById = new Map();
+
+    if (nextList.length === 0 && previousList.length > 0) {
+      return cloneSetup(previousList);
+    }
+
+    previousList.forEach(function (node) {
+      if (node && node.id != null) {
+        previousById.set(String(node.id), node);
+      }
+    });
+
+    return nextList.map(function (node) {
+      const merged = cloneSetup(node);
+      const previous = merged && merged.id != null ? previousById.get(String(merged.id)) : null;
+      const mergedChildren = mergeWorkflowNodes(previous && previous.children, merged.children);
+      const mergedBranchesSource = merged.branches && typeof merged.branches === 'object' ? merged.branches : { then: [], else: [] };
+      const previousBranches = previous && previous.branches && typeof previous.branches === 'object'
+        ? previous.branches
+        : { then: [], else: [] };
+
+      merged.children = mergedChildren;
+      merged.ifTitle = String(merged.ifTitle || (previous && previous.ifTitle) || 'If').trim() || 'If';
+      merged.elseTitle = String(merged.elseTitle || (previous && previous.elseTitle) || 'Else').trim() || 'Else';
+
+      if (merged.nodeType === 'condition' || (previous && previous.nodeType === 'condition')) {
+        merged.nodeType = 'condition';
+        const nextThen = Array.isArray(mergedBranchesSource.then) ? mergedBranchesSource.then : [];
+        const nextElse = Array.isArray(mergedBranchesSource.else) ? mergedBranchesSource.else : [];
+        merged.branches = {
+          then: mergeWorkflowNodes(previousBranches.then, nextThen.length ? nextThen : previousBranches.then),
+          else: mergeWorkflowNodes(previousBranches.else, nextElse.length ? nextElse : previousBranches.else)
+        };
+      } else {
+        const nextThen = Array.isArray(mergedBranchesSource.then) ? mergedBranchesSource.then : [];
+        const nextElse = Array.isArray(mergedBranchesSource.else) ? mergedBranchesSource.else : [];
+        merged.branches = {
+          then: mergeWorkflowNodes(previousBranches.then, nextThen.length ? nextThen : previousBranches.then),
+          else: mergeWorkflowNodes(previousBranches.else, nextElse.length ? nextElse : previousBranches.else)
+        };
+      }
+
+      return merged;
+    });
+  }
+
+  function mergeSetupDraft(previousSetup, nextSetup) {
+    const previous = previousSetup && typeof previousSetup === 'object' ? previousSetup : null;
+    const next = nextSetup && typeof nextSetup === 'object' ? nextSetup : {};
+
+    return {
+      id: next.id != null ? next.id : (previous && previous.id != null ? previous.id : null),
+      name: String(next.name || (previous && previous.name) || 'Untitled Setup').trim() || 'Untitled Setup',
+      isDefault: next.isDefault === true || (previous && previous.isDefault === true),
+      preTradeSegments: mergeWorkflowSegments(previous && previous.preTradeSegments, next.preTradeSegments),
+      postTradeSegments: mergeWorkflowSegments(previous && previous.postTradeSegments, next.postTradeSegments)
+    };
+  }
+
+  function mergeWorkflowSegments(previousSegments, nextSegments) {
+    const previousList = Array.isArray(previousSegments) ? previousSegments : [];
+    const nextList = Array.isArray(nextSegments) ? nextSegments : [];
+    const previousById = new Map();
+
+    previousList.forEach(function (segment) {
+      if (segment && segment.id != null) {
+        previousById.set(String(segment.id), segment);
+      }
+    });
+
+    return nextList.map(function (segment) {
+      const merged = cloneSetup(segment);
+      const previous = merged && merged.id != null ? previousById.get(String(merged.id)) : null;
+
+      merged.title = String(merged.title || (previous && previous.title) || 'Segment').trim() || 'Segment';
+      merged.items = mergeWorkflowNodes(previous && previous.items, merged.items);
+      return merged;
+    });
+  }
+
+  function countWorkflowNodes(nodeList) {
+    return ensureNodeList(nodeList, 'count').reduce(function (count, node) {
+      const childrenCount = countWorkflowNodes(node.children);
+      const branchesCount = countWorkflowNodes((node.branches && node.branches.then) || []) + countWorkflowNodes((node.branches && node.branches.else) || []);
+      return count + 1 + childrenCount + branchesCount;
+    }, 0);
+  }
+
+  function getNodeByPath(fieldName, path) {
+    const setup = getCurrentSetup();
+    const tokens = Array.isArray(path) ? path.slice() : [];
+    let list = setup[fieldName];
+    let node = null;
+
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (typeof token === 'number') {
+        node = list && list[token];
+        if (!node) return null;
+        const nextToken = tokens[i + 1];
+        if (nextToken === 'children') {
+          list = node.children || [];
+          i += 1;
+        } else if (nextToken === 'branches') {
+          const branchName = tokens[i + 2];
+          list = node.branches && node.branches[branchName] ? node.branches[branchName] : [];
+          i += 2;
+        } else if (i < tokens.length - 1) {
+          return null;
+        }
+      }
+    }
+
+    return node;
+  }
+
+  function getNodeListByPath(fieldName, path) {
+    const setup = getCurrentSetup();
+    const tokens = Array.isArray(path) ? path.slice() : [];
+    let list = setup[fieldName];
+
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (typeof token === 'number') {
+        const node = list && list[token];
+        if (!node) return null;
+        const nextToken = tokens[i + 1];
+        if (nextToken === 'children') {
+          list = node.children || [];
+          i += 1;
+        } else if (nextToken === 'branches') {
+          const branchName = tokens[i + 2];
+          list = node.branches && node.branches[branchName] ? node.branches[branchName] : [];
+          i += 2;
+        } else if (i < tokens.length - 1) {
+          return null;
+        }
+      }
+    }
+
+    return list;
+  }
+
+  function renderEditor() {
+    const setup = getCurrentSetup();
+    const nameInput = document.getElementById('setup-name');
+    const defaultInput = document.getElementById('setup-default');
+    const summary = document.getElementById('setup-summary');
+
+    nameInput.value = setup.name || '';
+    // Keep default unchecked unless user explicitly changes it in this session.
+    defaultInput.checked = defaultCheckboxTouched ? defaultInput.checked : false;
+    summary.innerHTML = setupSummary();
+
+    renderSegments('preTradeSegments');
+    renderSegments('postTradeSegments');
+    renderList();
+  }
+
+  function renderList() {
+    const list = document.getElementById('setup-list');
+    if (!list) return;
+
+    if (!savedSetups.length) {
+      list.innerHTML = '<div class="empty">No setups yet.</div>';
+      return;
+    }
+
+    list.innerHTML = savedSetups.map(function (setup, index) {
+      const active = activeSetup && String(activeSetup.id || activeSetup.localId || '') === String(setup.id || setup.localId || '');
+      const defaultBadge = setup.isDefault ? '<span class="badge default">Default</span>' : '<span class="badge">Saved</span>';
+      const preCount = Array.isArray(setup.preTradeSegments) ? setup.preTradeSegments.length : 0;
+      const postCount = Array.isArray(setup.postTradeSegments) ? setup.postTradeSegments.length : 0;
+      return '<div class="setup-card' + (active ? ' active' : '') + '" onclick="selectSetup(' + index + ')">'
+        + '<div class="setup-name">' + escapeHtml(setup.name || 'Untitled Setup') + '</div>'
+        + '<div class="setup-meta">Pre: ' + preCount + ' segment(s)<br/>Post: ' + postCount + ' segment(s)</div>'
+        + defaultBadge
+        + '</div>';
+    }).join('');
+  }
+
+  function renderSuggestedList() {
+    const list = document.getElementById('suggested-setup-list');
+    if (!list) return;
+
+    if (!suggestedSetups.length) {
+      list.innerHTML = '<div class="empty">No suggested setups available.</div>';
+      return;
+    }
+
+    list.innerHTML = suggestedSetups.map(function (setup, index) {
+      const preCount = Array.isArray(setup.preTradeSegments) ? setup.preTradeSegments.length : 0;
+      const postCount = Array.isArray(setup.postTradeSegments) ? setup.postTradeSegments.length : 0;
+
+      return '<div class="setup-card" onclick="loadSuggestedSetup(' + index + ')">'
+        + '<div class="setup-name">' + escapeHtml(setup.name || 'Suggested Setup') + '</div>'
+        + '<div class="setup-meta">Pre: ' + preCount + ' segment(s)<br/>Post: ' + postCount + ' segment(s)</div>'
+        + '<span class="badge">Template</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  function createWorkflowNode(nodeType, title) {
+    const normalizedType = nodeType === 'condition' || nodeType === 'comment' ? nodeType : 'check';
+    const isCondition = normalizedType === 'condition';
+    const isComment = normalizedType === 'comment';
+    return {
+      id: uuid('workflow-node'),
+      nodeType: normalizedType,
+      title: String(title || (isCondition ? 'If / Else condition' : (isComment ? 'Comment note' : 'New checklist item'))),
+      ifTitle: 'If',
+      elseTitle: 'Else',
+      description: '',
+      required: true,
+      allowMedia: true,
+      children: [],
+      branches: { then: [], else: [] }
+    };
+  }
+
+  function encodeNodePath(path) {
+    return encodeURIComponent(JSON.stringify(Array.isArray(path) ? path : []));
+  }
+
+  function decodeNodePath(pathEncoded) {
+    try {
+      const decoded = JSON.parse(decodeURIComponent(String(pathEncoded || '')));
+      return Array.isArray(decoded) ? decoded : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function getNodeListForContainer(fieldName, segmentIndex, containerPath) {
+    const setup = getCurrentSetup();
+    const segment = setup[fieldName] && setup[fieldName][segmentIndex];
+    if (!segment) return null;
+
+    segment.items = Array.isArray(segment.items) ? segment.items : [];
+    let list = segment.items;
+    const tokens = Array.isArray(containerPath) ? containerPath : [];
+
+    for (let i = 0; i < tokens.length; i += 1) {
+      const indexToken = tokens[i];
+      const relationToken = tokens[i + 1];
+      const node = list && list[indexToken];
+      if (!node || typeof indexToken !== 'number') return null;
+
+      if (relationToken === 'children') {
+        node.children = Array.isArray(node.children) ? node.children : [];
+        list = node.children;
+        i += 1;
+        continue;
+      }
+
+      if (relationToken === 'branches') {
+        const branchName = tokens[i + 2] === 'else' ? 'else' : 'then';
+        node.branches = node.branches && typeof node.branches === 'object' ? node.branches : { then: [], else: [] };
+        node.branches.then = Array.isArray(node.branches.then) ? node.branches.then : [];
+        node.branches.else = Array.isArray(node.branches.else) ? node.branches.else : [];
+        list = node.branches[branchName];
+        i += 2;
+        continue;
+      }
+
+      return null;
+    }
+
+    return list;
+  }
+
+  function getNodeAtPath(fieldName, segmentIndex, nodePath) {
+    const path = Array.isArray(nodePath) ? nodePath : [];
+    if (path.length === 0) return null;
+    const nodeIndex = path[path.length - 1];
+    if (typeof nodeIndex !== 'number') return null;
+    const list = getNodeListForContainer(fieldName, segmentIndex, path.slice(0, -1));
+    if (!list || !list[nodeIndex]) return null;
+    return { node: list[nodeIndex], list: list, index: nodeIndex };
+  }
+
+  function renderSegments(fieldName) {
+    const container = document.getElementById(fieldName === 'preTradeSegments' ? 'pretrade-segments' : 'posttrade-segments');
+    if (!container) return;
+
+    const setup = getCurrentSetup();
+    const segments = ensureSegmentIds(Array.isArray(setup[fieldName]) ? setup[fieldName] : [], fieldName);
+    setup[fieldName] = segments;
+
+    if (segments.length === 0) {
+      container.innerHTML = '<div class="empty">No segments yet. Add a segment to begin.</div>';
+      return;
+    }
+
+    function renderNode(node, segmentIndex, path, depth, branchName) {
+      const isCondition = node.nodeType === 'condition';
+      const pathEncoded = encodeNodePath(path);
+      const titleValue = escapeAttr(node.title || '');
+      const ifTitle = String(node.ifTitle || 'If').trim() || 'If';
+      const elseTitle = String(node.elseTitle || 'Else').trim() || 'Else';
+      const ifTitleValue = escapeAttr(ifTitle);
+      const elseTitleValue = escapeAttr(elseTitle);
+      const idValue = escapeAttr(node.id || '');
+      const descriptionValue = escapeHtml(node.description || '');
+      const updatePrefix = 'updateWorkflowNodeByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\',\'';
+      const removeCall = 'removeWorkflowNodeByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\')';
+      const nodeControls = '<div class="node-actions">'
+        + '<button class="btn" type="button" onclick="addSubItemByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\')">Add Subitem</button>'
+        + (isCondition
+          ? '<button class="btn warn" type="button" onclick="addBranchNodeByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\',\'then\')">Add ' + escapeHtml(ifTitle) + ' Item</button>'
+            + '<button class="btn warn" type="button" onclick="addBranchNodeByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\',\'else\')">Add ' + escapeHtml(elseTitle) + ' Item</button>'
+          : '<button class="btn warn" type="button" onclick="convertToConditionByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\')">Turn Into If/Else</button>')
+        + '</div>';
+      const childrenHtml = Array.isArray(node.children) && node.children.length
+        ? '<div class="node-children">' + node.children.map(function (child, childIndex) {
+          return renderNode(child, segmentIndex, path.concat(['children', childIndex]), depth + 1, 'subitem');
+        }).join('') + '</div>'
+        : '';
+      const branchesHtml = isCondition
+        ? '<div class="branch-wrap">'
+          + '<div class="branch-grid">'
+          + '<div class="branch-col">'
+          + '<div class="branch-title">' + escapeHtml(ifTitle) + '</div>'
+          + '<div class="node-children' + (((node.branches && node.branches.then) || []).length === 0 ? ' empty' : '') + '">'
+          + (((node.branches && node.branches.then) || []).map(function (child, childIndex) {
+            return renderNode(child, segmentIndex, path.concat(['branches', 'then', childIndex]), depth + 1, ifTitle);
+          }).join('') || '<div class="empty">No ' + escapeHtml(ifTitle.toLowerCase()) + '-branch items yet.</div>')
+          + '</div>'
+          + '</div>'
+          + '<div class="branch-col">'
+          + '<div class="branch-title">' + escapeHtml(elseTitle) + '</div>'
+          + '<div class="node-children' + (((node.branches && node.branches.else) || []).length === 0 ? ' empty' : '') + '">'
+          + (((node.branches && node.branches.else) || []).map(function (child, childIndex) {
+            return renderNode(child, segmentIndex, path.concat(['branches', 'else', childIndex]), depth + 1, elseTitle);
+          }).join('') || '<div class="empty">No else-branch items yet.</div>')
+          + '</div>'
+          + '</div>'
+          + '</div>'
+          + '</div>'
+        : '';
+
+      return '<div class="item' + (depth > 0 ? ' nested' : '') + '"'
+        + ' ondragover="allowWorkflowNodeDrop(event, \'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\')"'
+        + ' ondragleave="clearWorkflowNodeDropState(event)"'
+        + ' ondrop="dropWorkflowNode(event, \'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\')"'
+        + '>'
+        + '<div class="node-header">'
+        + '<span class="node-type-badge">' + escapeHtml(branchName ? branchName.toUpperCase() : (isCondition ? 'IF / ELSE' : (node.nodeType === 'comment' ? 'COMMENT' : (depth > 0 ? 'SUBITEM' : 'ITEM')))) + '</span>'
+        + '<div class="node-header-actions">'
+        + '<button class="drag-handle" type="button" draggable="true" title="Drag to reorder" aria-label="Drag to reorder" ondragstart="startWorkflowNodeDrag(event, \'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\')" ondragend="endWorkflowNodeDrag(event)">Drag</button>'
+        + '<button class="node-move-btn" type="button" title="Move up" aria-label="Move up" onclick="moveWorkflowNodeByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\', -1)">Up</button>'
+        + '<button class="node-move-btn" type="button" title="Move down" aria-label="Move down" onclick="moveWorkflowNodeByPath(\'' + fieldName + '\',' + segmentIndex + ',\'' + pathEncoded + '\', 1)">Down</button>'
+        + '<span>' + escapeHtml(node.id || '') + '</span>'
+        + '</div>'
+        + '</div>'
+        + '<div class="item-grid">'
+        + '<input class="field" type="text" value="' + titleValue + '" placeholder="Checklist title" onchange="' + updatePrefix + 'title\', this.value)"/>'
+        + '<input class="field" type="text" value="' + idValue + '" placeholder="Node ID" onchange="' + updatePrefix + 'id\', this.value)"/>'
+        + '<select class="field" onchange="' + updatePrefix + 'nodeType\', this.value)">'
+        + '<option value="check"' + (node.nodeType !== 'condition' && node.nodeType !== 'comment' ? ' selected' : '') + '>Check</option>'
+        + '<option value="condition"' + (isCondition ? ' selected' : '') + '>If / Else</option>'
+        + '<option value="comment"' + (node.nodeType === 'comment' ? ' selected' : '') + '>Comment</option>'
+        + '</select>'
+        + '<button class="btn" type="button" onclick="' + removeCall + '">Remove</button>'
+        + '</div>'
+        + '<textarea class="field item-desc" placeholder="Description" onchange="' + updatePrefix + 'description\', this.value)">' + descriptionValue + '</textarea>'
+        + (isCondition
+          ? '<div class="item-grid" style="margin-bottom:8px;">'
+            + '<input class="field" type="text" value="' + ifTitleValue + '" placeholder="If title" onchange="' + updatePrefix + 'ifTitle\', this.value)"/>'
+            + '<input class="field" type="text" value="' + elseTitleValue + '" placeholder="Else title" onchange="' + updatePrefix + 'elseTitle\', this.value)"/>'
+            + '<div></div><div></div>'
+            + '</div>'
+          : '')
+        + '<div class="setup-options">'
+        + '<label class="checkline"><input type="checkbox" ' + (node.required !== false ? 'checked' : '') + ' onchange="' + updatePrefix + 'required\', this.checked)"/> Required</label>'
+        + '<label class="checkline"><input type="checkbox" ' + (node.allowMedia !== false ? 'checked' : '') + ' onchange="' + updatePrefix + 'allowMedia\', this.checked)"/> Allow media</label>'
+        + '</div>'
+        + nodeControls
+        + childrenHtml
+        + branchesHtml
+        + '</div>';
+    }
+
+    container.innerHTML = '<div class="workflow-canvas">' + segments.map(function (segment, segmentIndex) {
+      const items = Array.isArray(segment.items) ? segment.items : [];
+      const itemsHtml = items.map(function (item, itemIndex) {
+        return renderNode(item, segmentIndex, [itemIndex], 0, null);
+      }).join('');
+
+      const connector = segmentIndex < segments.length - 1
+        ? '<div class="flow-connector"><div class="flow-connector-line"></div><div class="flow-connector-arrow">→</div><div class="flow-connector-line"></div></div>'
+        : '';
+
+      return (segmentIndex > 0 ? connector : '')
+        + '<div class="segment">'
+        + '<div class="segment-head">'
+        + '<div class="segment-title"><span class="segment-sticker"><span class="segment-sticker-dot"></span>Step ' + String(segmentIndex + 1).padStart(2, '0') + '</span><span>' + escapeHtml(segment.title || 'Segment') + '</span></div>'
+        + '<button class="btn" type="button" onclick="addItem(\'' + fieldName + '\',' + segmentIndex + ')">Add Item</button>'
+        + '<button class="btn" type="button" onclick="removeSegment(\'' + fieldName + '\',' + segmentIndex + ')">Delete Segment</button>'
+        + '</div>'
+        + '<input class="field" type="text" value="' + escapeAttr(segment.title || '') + '" placeholder="Segment title" onchange="updateSegment(\'' + fieldName + '\',' + segmentIndex + ',\'title\', this.value)" style="margin-bottom:10px"/>'
+        + '<div class="item-list">' + (itemsHtml || '<div class="empty">No items yet. Add one item for this segment.</div>') + '</div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function addSubItem(fieldName, segmentIndex, itemIndex) {
+    addSubItemByPath(fieldName, segmentIndex, encodeNodePath([itemIndex]));
+  }
+
+  function addBranchNode(fieldName, segmentIndex, itemIndex, branchName) {
+    addBranchNodeByPath(fieldName, segmentIndex, encodeNodePath([itemIndex]), branchName);
+  }
+
+  function convertToCondition(fieldName, segmentIndex, itemIndex) {
+    convertToConditionByPath(fieldName, segmentIndex, encodeNodePath([itemIndex]));
+  }
+
+  function addSubItemByPath(fieldName, segmentIndex, nodePathEncoded) {
+    const target = getNodeAtPath(fieldName, segmentIndex, decodeNodePath(nodePathEncoded));
+    if (!target || !target.node) return;
+    target.node.children = Array.isArray(target.node.children) ? target.node.children : [];
+    target.node.children.push(createWorkflowNode('check', 'New subitem'));
+    renderEditor();
+  }
+
+  function addBranchNodeByPath(fieldName, segmentIndex, nodePathEncoded, branchName) {
+    const target = getNodeAtPath(fieldName, segmentIndex, decodeNodePath(nodePathEncoded));
+    if (!target || !target.node) return;
+    target.node.nodeType = 'condition';
+    target.node.branches = target.node.branches && typeof target.node.branches === 'object' ? target.node.branches : { then: [], else: [] };
+    target.node.branches.then = Array.isArray(target.node.branches.then) ? target.node.branches.then : [];
+    target.node.branches.else = Array.isArray(target.node.branches.else) ? target.node.branches.else : [];
+    const bucket = branchName === 'else' ? target.node.branches.else : target.node.branches.then;
+    const branchTitle = branchName === 'else'
+      ? (String(target.node.elseTitle || 'Else').trim() || 'Else')
+      : (String(target.node.ifTitle || 'If').trim() || 'If');
+    bucket.push(createWorkflowNode('check', 'New ' + branchTitle + ' item'));
+    renderEditor();
+  }
+
+  function convertToConditionByPath(fieldName, segmentIndex, nodePathEncoded) {
+    const target = getNodeAtPath(fieldName, segmentIndex, decodeNodePath(nodePathEncoded));
+    if (!target || !target.node) return;
+    target.node.nodeType = 'condition';
+    target.node.branches = target.node.branches && typeof target.node.branches === 'object' ? target.node.branches : { then: [], else: [] };
+    target.node.branches.then = Array.isArray(target.node.branches.then) ? target.node.branches.then : [];
+    target.node.branches.else = Array.isArray(target.node.branches.else) ? target.node.branches.else : [];
+    renderEditor();
+  }
+
+  function updateWorkflowNode(fieldName, segmentIndex, itemIndex, collectionName, nodeIndex, key, value) {
+    const path = collectionName === 'children'
+      ? [itemIndex, 'children', nodeIndex]
+      : [itemIndex, 'branches', collectionName === 'else' ? 'else' : 'then', nodeIndex];
+    updateWorkflowNodeByPath(fieldName, segmentIndex, encodeNodePath(path), key, value);
+  }
+
+  function updateWorkflowNodeByPath(fieldName, segmentIndex, nodePathEncoded, key, value) {
+    const target = getNodeAtPath(fieldName, segmentIndex, decodeNodePath(nodePathEncoded));
+    if (!target || !target.node) return;
+    target.node[key] = value;
+    if (key === 'nodeType' && value !== 'condition') {
+      target.node.branches = { then: [], else: [] };
+    }
+    renderEditor();
+  }
+
+  function removeWorkflowNode(fieldName, segmentIndex, itemIndex, collectionName, nodeIndex) {
+    const path = collectionName === 'children'
+      ? [itemIndex, 'children', nodeIndex]
+      : [itemIndex, 'branches', collectionName === 'else' ? 'else' : 'then', nodeIndex];
+    removeWorkflowNodeByPath(fieldName, segmentIndex, encodeNodePath(path));
+  }
+
+  function removeWorkflowNodeByPath(fieldName, segmentIndex, nodePathEncoded) {
+    const target = getNodeAtPath(fieldName, segmentIndex, decodeNodePath(nodePathEncoded));
+    if (!target || !target.list) return;
+    target.list.splice(target.index, 1);
+    renderEditor();
+  }
+
+  function cleanupWorkflowDropTargets() {
+    document.querySelectorAll('.item.drop-target, .item.drop-target-before, .item.drop-target-after').forEach(function (item) {
+      item.classList.remove('drop-target', 'drop-target-before', 'drop-target-after');
+    });
+  }
+
+  function sameNodePathContainer(firstPath, secondPath) {
+    const first = Array.isArray(firstPath) ? firstPath.slice(0, -1) : [];
+    const second = Array.isArray(secondPath) ? secondPath.slice(0, -1) : [];
+    return JSON.stringify(first) === JSON.stringify(second);
+  }
+
+  function moveWorkflowNodeByPath(fieldName, segmentIndex, nodePathEncoded, direction) {
+    const sourcePath = decodeNodePath(nodePathEncoded);
+    if (!Array.isArray(sourcePath) || sourcePath.length === 0) return;
+
+    const source = getNodeAtPath(fieldName, segmentIndex, sourcePath);
+    if (!source || !source.list || source.index < 0) return;
+
+    const nextIndex = source.index + (direction < 0 ? -1 : 1);
+    if (nextIndex < 0 || nextIndex >= source.list.length) return;
+
+    const item = source.list.splice(source.index, 1)[0];
+    source.list.splice(nextIndex, 0, item);
+    draggedWorkflowNode = null;
+    cleanupWorkflowDropTargets();
+    renderEditor();
+  }
+
+  function startWorkflowNodeDrag(event, fieldName, segmentIndex, nodePathEncoded) {
+    const path = decodeNodePath(nodePathEncoded);
+    const item = event && event.currentTarget ? event.currentTarget.closest('.item') : null;
+    draggedWorkflowNode = {
+      fieldName: fieldName,
+      segmentIndex: segmentIndex,
+      path: path
+    };
+
+    if (event && event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', nodePathEncoded);
+    }
+
+    if (item) {
+      item.classList.add('dragging');
+    }
+  }
+
+  function endWorkflowNodeDrag(event) {
+    const item = event && event.currentTarget ? event.currentTarget.closest('.item') : null;
+    if (item) {
+      item.classList.remove('dragging');
+    }
+    draggedWorkflowNode = null;
+    cleanupWorkflowDropTargets();
+  }
+
+  function allowWorkflowNodeDrop(event, fieldName, segmentIndex, nodePathEncoded) {
+    if (!draggedWorkflowNode) return;
+    if (draggedWorkflowNode.fieldName !== fieldName || draggedWorkflowNode.segmentIndex !== segmentIndex) return;
+
+    const targetPath = decodeNodePath(nodePathEncoded);
+    if (!sameNodePathContainer(draggedWorkflowNode.path, targetPath)) return;
+
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
+
+    cleanupWorkflowDropTargets();
+
+    const targetItem = event && event.currentTarget ? event.currentTarget : null;
+    if (!targetItem) return;
+
+    const rect = targetItem.getBoundingClientRect();
+    const insertAfter = event.clientY > rect.top + rect.height / 2;
+    targetItem.classList.add('drop-target');
+    targetItem.classList.add(insertAfter ? 'drop-target-after' : 'drop-target-before');
+
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  function clearWorkflowNodeDropState(event) {
+    const targetItem = event && event.currentTarget ? event.currentTarget : null;
+    if (targetItem) {
+      targetItem.classList.remove('drop-target', 'drop-target-before', 'drop-target-after');
+    }
+  }
+
+  function dropWorkflowNode(event, fieldName, segmentIndex, nodePathEncoded) {
+    if (!draggedWorkflowNode) return;
+    if (draggedWorkflowNode.fieldName !== fieldName || draggedWorkflowNode.segmentIndex !== segmentIndex) return;
+
+    const targetPath = decodeNodePath(nodePathEncoded);
+    if (!sameNodePathContainer(draggedWorkflowNode.path, targetPath)) return;
+
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
+
+    const targetItem = event && event.currentTarget ? event.currentTarget : null;
+    if (!targetItem) return;
+
+    const rect = targetItem.getBoundingClientRect();
+    const insertAfter = event.clientY > rect.top + rect.height / 2;
+    const source = getNodeAtPath(fieldName, segmentIndex, draggedWorkflowNode.path);
+    const target = getNodeAtPath(fieldName, segmentIndex, targetPath);
+
+    if (!source || !target || !source.list || source.list !== target.list || source.index === target.index) {
+      draggedWorkflowNode = null;
+      cleanupWorkflowDropTargets();
+      return;
+    }
+
+    const item = source.list.splice(source.index, 1)[0];
+    let insertIndex = target.index + (insertAfter ? 1 : 0);
+
+    if (source.index < target.index) {
+      insertIndex -= 1;
+    }
+
+    if (insertIndex < 0) insertIndex = 0;
+    if (insertIndex > source.list.length) insertIndex = source.list.length;
+
+    source.list.splice(insertIndex, 0, item);
+    draggedWorkflowNode = null;
+    cleanupWorkflowDropTargets();
+    renderEditor();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+  }
+
+  function escapeAttr(text) {
+    return escapeHtml(text).replace(/"/g, '&quot;');
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tab-pretrade-btn').classList.toggle('active', tab === 'pretrade');
+    document.getElementById('tab-posttrade-btn').classList.toggle('active', tab === 'posttrade');
+    document.getElementById('tab-pretrade').classList.toggle('active', tab === 'pretrade');
+    document.getElementById('tab-posttrade').classList.toggle('active', tab === 'posttrade');
+  }
+
+  function renderPreviewColumn(title, segments) {
+    const list = Array.isArray(segments) ? segments : [];
+    if (!list.length) {
+      return '<div class="preview-col">'
+        + '<div class="preview-col-title">' + escapeHtml(title) + '</div>'
+        + '<div class="empty">No segments.</div>'
+        + '</div>';
+    }
+
+    function renderPreviewNode(node, depth, nodeKey) {
+      const children = Array.isArray(node.children) ? node.children : [];
+      const branches = node.branches && typeof node.branches === 'object' ? node.branches : { then: [], else: [] };
+      const ifTitle = String(node.ifTitle || 'If').trim() || 'If';
+      const elseTitle = String(node.elseTitle || 'Else').trim() || 'Else';
+      const groupId = 'preview-condition-' + String(nodeKey || 'root').replace(/[^a-zA-Z0-9_-]/g, '-');
+      const nestedChildren = children.length ? '<div class="preview-nested">' + children.map(function (child, childIndex) { return renderPreviewNode(child, depth + 1, String(nodeKey || 'root') + '-child-' + childIndex); }).join('') + '</div>' : '';
+      const thenBranches = Array.isArray(branches.then) ? branches.then : [];
+      const elseBranches = Array.isArray(branches.else) ? branches.else : [];
+      const branchHtml = node.nodeType === 'condition'
+        ? '<div class="preview-branch">'
+          + '<div class="preview-branch-switch">'
+          + '<div class="preview-branch-nav">'
+          + '<button type="button" class="preview-branch-btn active" data-preview-branch-btn="' + escapeAttr(groupId) + '-then" onclick="togglePreviewConditionBranch(event, \'' + escapeAttr(groupId) + '\', \'then\')">' + escapeHtml(ifTitle) + '</button>'
+          + '<button type="button" class="preview-branch-btn" data-preview-branch-btn="' + escapeAttr(groupId) + '-else" onclick="togglePreviewConditionBranch(event, \'' + escapeAttr(groupId) + '\', \'else\')">' + escapeHtml(elseTitle) + '</button>'
+          + '</div>'
+          + '<div>'
+          + '<div id="' + escapeAttr(groupId) + '-then" class="preview-branch-pane active"><div class="preview-branch-title">' + escapeHtml(ifTitle) + '</div>'
+          + (thenBranches.length ? thenBranches.map(function (child, childIndex) { return renderPreviewNode(child, depth + 1, String(nodeKey || 'root') + '-then-' + childIndex); }).join('') : '<div class="empty">No ' + escapeHtml(ifTitle.toLowerCase()) + '-branch items.</div>')
+          + '</div>'
+          + '<div id="' + escapeAttr(groupId) + '-else" class="preview-branch-pane"><div class="preview-branch-title">' + escapeHtml(elseTitle) + '</div>'
+          + (elseBranches.length ? elseBranches.map(function (child, childIndex) { return renderPreviewNode(child, depth + 1, String(nodeKey || 'root') + '-else-' + childIndex); }).join('') : '<div class="empty">No ' + escapeHtml(elseTitle.toLowerCase()) + '-branch items.</div>')
+          + '</div>'
+          + '</div>'
+          + '</div>'
+          + '</div>'
+        : '';
+
+      return '<div class="preview-item' + (depth > 0 ? ' nested' : '') + '">'
+        + '<div class="preview-item-title">' + escapeHtml(node.title || 'Untitled item') + '</div>'
+        + '<div class="preview-item-desc">' + escapeHtml(node.description || 'No description') + '</div>'
+        + '<div class="preview-tags">'
+        + '<span class="preview-tag">' + escapeHtml(node.nodeType === 'condition' ? 'If/Else' : (node.nodeType === 'comment' ? 'Comment' : (node.required === false ? 'Optional' : 'Required'))) + '</span>'
+        + '<span class="preview-tag">' + (node.allowMedia === false ? 'No Media' : 'Media Allowed') + '</span>'
+        + '</div>'
+        + nestedChildren
+        + branchHtml
+        + '</div>';
+    }
+
+    const segmentsHtml = list.map(function (segment) {
+      const items = Array.isArray(segment.items) ? segment.items : [];
+      const itemsHtml = items.map(function (item, itemIndex) {
+        return renderPreviewNode(item, 0, String(segment.id || 'segment') + '-item-' + itemIndex);
+      }).join('');
+
+      return '<div class="preview-segment">'
+        + '<div class="preview-segment-title">' + escapeHtml(segment.title || 'Untitled segment') + '</div>'
+        + (itemsHtml || '<div class="empty">No items.</div>')
+        + '</div>';
+    }).join('');
+
+    return '<div class="preview-col">'
+      + '<div class="preview-col-title">' + escapeHtml(title) + '</div>'
+      + segmentsHtml
+      + '</div>';
+  }
+
+  function viewSetup() {
+    const setup = serializeActiveSetup();
+    const modal = document.getElementById('preview-modal');
+    const title = document.getElementById('preview-setup-title');
+    const content = document.getElementById('preview-content');
+    if (!modal || !title || !content) return;
+
+    title.textContent = (setup.name || 'Untitled Setup') + ' · Preview';
+    content.innerHTML = renderPreviewColumn('Pre Trade', setup.preTradeSegments)
+      + renderPreviewColumn('Post Trade', setup.postTradeSegments);
+    modal.classList.add('open');
+  }
+
+  function closeSetupPreview(event) {
+    if (event && event.target && event.target.id !== 'preview-modal') {
+      return;
+    }
+
+    const modal = document.getElementById('preview-modal');
+    if (modal) {
+      modal.classList.remove('open');
+    }
+  }
+
+  function togglePreviewConditionBranch(event, groupId, branchName) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const thenPane = document.getElementById(groupId + '-then');
+    const elsePane = document.getElementById(groupId + '-else');
+    const isThen = branchName !== 'else';
+
+    if (thenPane) thenPane.classList.toggle('active', isThen);
+    if (elsePane) elsePane.classList.toggle('active', !isThen);
+
+    document.querySelectorAll('[data-preview-branch-btn="' + groupId + '-then"]').forEach(function (btn) {
+      btn.classList.toggle('active', isThen);
+    });
+    document.querySelectorAll('[data-preview-branch-btn="' + groupId + '-else"]').forEach(function (btn) {
+      btn.classList.toggle('active', !isThen);
+    });
+  }
+
+  function createNewSetup() {
+    activeSetup = createEmptySetup();
+    renderEditor();
+    setMessage('New setup ready.', false);
+  }
+
+  function addStarterSegment(fieldName) {
+    const setup = getCurrentSetup();
+    const segment = cloneSetup(starterSegments[fieldName][0]);
+    segment.id = segment.id || uuid(fieldName + '-segment');
+    segment.items = ensureSegmentIds([segment], fieldName)[0].items;
+    setup[fieldName].push(segment);
+    renderEditor();
+  }
+
+  function addSegment(fieldName) {
+    const setup = getCurrentSetup();
+    setup[fieldName].push({
+      id: uuid(fieldName + '-segment'),
+      title: 'New Segment',
+      items: []
+    });
+    renderEditor();
+  }
+
+  function addItem(fieldName, segmentIndex) {
+    const setup = getCurrentSetup();
+    const segment = setup[fieldName] && setup[fieldName][segmentIndex];
+    if (!segment) return;
+    if (!Array.isArray(segment.items)) segment.items = [];
+    segment.items.push(createWorkflowNode('check', 'New checklist item'));
+    renderEditor();
+  }
+
+  function updateSegment(fieldName, segmentIndex, key, value) {
+    const setup = getCurrentSetup();
+    const segment = setup[fieldName] && setup[fieldName][segmentIndex];
+    if (!segment) return;
+    segment[key] = value;
+    renderEditor();
+  }
+
+  function updateItem(fieldName, segmentIndex, itemIndex, key, value) {
+    const setup = getCurrentSetup();
+    const segment = setup[fieldName] && setup[fieldName][segmentIndex];
+    if (!segment || !segment.items || !segment.items[itemIndex]) return;
+    segment.items[itemIndex][key] = value;
+    if (key === 'nodeType' && value !== 'condition') {
+      segment.items[itemIndex].branches = { then: [], else: [] };
+    }
+    renderEditor();
+  }
+
+  function removeSegment(fieldName, segmentIndex) {
+    const setup = getCurrentSetup();
+    setup[fieldName].splice(segmentIndex, 1);
+    renderEditor();
+  }
+
+  function removeItem(fieldName, segmentIndex, itemIndex) {
+    const setup = getCurrentSetup();
+    const segment = setup[fieldName] && setup[fieldName][segmentIndex];
+    if (!segment || !Array.isArray(segment.items)) return;
+    segment.items.splice(itemIndex, 1);
+    renderEditor();
+  }
+
+  function serializeActiveSetup() {
+    const setup = getCurrentSetup();
+    setup.name = document.getElementById('setup-name').value.trim() || 'Untitled Setup';
+    setup.isDefault = document.getElementById('setup-default').checked;
+    setup.preTradeSegments = ensureSegmentIds(setup.preTradeSegments, 'preTradeSegments');
+    setup.postTradeSegments = ensureSegmentIds(setup.postTradeSegments, 'postTradeSegments');
+    return cloneSetup(setup);
+  }
+
+  function applySavedSetup(setup) {
+    const mergedDraft = mergeSetupDraft(activeSetup, setup);
+    activeSetup = normalizeSetup(mergedDraft);
+    defaultCheckboxTouched = false;
+    activeSetup.preTradeSegments = ensureSegmentIds(activeSetup.preTradeSegments, 'preTradeSegments');
+    activeSetup.postTradeSegments = ensureSegmentIds(activeSetup.postTradeSegments, 'postTradeSegments');
+    renderEditor();
+  }
+
+  function loadIntoChecklist() {
+    const setup = serializeActiveSetup();
+    localStorage.setItem(ACTIVE_SETUP_KEY, JSON.stringify(setup));
+    if (setup.id) {
+      localStorage.setItem(ACTIVE_SETUP_ID_KEY, String(setup.id));
+    } else {
+      localStorage.removeItem(ACTIVE_SETUP_ID_KEY);
+    }
+    setMessage('Setup loaded for use in the checklist page.', false);
+    window.location.href = 'index.html';
+  }
+
+  async function saveSetup() {
+    try {
+      const setup = serializeActiveSetup();
+
+      if (!setup.name) {
+        setMessage('Setup name is required.', true);
+        return;
+      }
+
+      if (setup.preTradeSegments.length === 0 && setup.postTradeSegments.length === 0) {
+        setMessage('Add at least one segment before saving.', true);
+        return;
+      }
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        let result = null;
+        if (setup.id) {
+          result = await FrontendAPI.updateSetup(setup.id, setup);
+        } else {
+          result = await FrontendAPI.createSetup(setup);
+        }
+
+        if (result && result.setup) {
+          applySavedSetup(result.setup);
+          upsertSavedSetup(result.setup);
+          setMessage('Setup saved to the database.', false);
+        }
+        return;
+      }
+
+      const localSetups = loadLocalSetups();
+      if (!setup.id) {
+        setup.id = uuid('setup');
+      }
+
+      const index = localSetups.findIndex(function (item) { return String(item.id) === String(setup.id); });
+      if (index >= 0) {
+        localSetups[index] = setup;
+      } else {
+        localSetups.unshift(setup);
+      }
+
+      if (setup.isDefault) {
+        localSetups.forEach(function (item) {
+          item.isDefault = String(item.id) === String(setup.id);
+        });
+      }
+
+      persistLocalSetups(localSetups);
+      savedSetups = localSetups;
+      applySavedSetup(setup);
+      setMessage('Setup saved locally.', false);
+    } catch (error) {
+      setMessage(error.message || 'Could not save setup.', true);
+    }
+  }
+
+  async function setActiveAsDefault() {
+    try {
+      const setup = serializeActiveSetup();
+      if (!setup.id) {
+        setMessage('Save the setup before setting it as default.', true);
+        return;
+      }
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = await FrontendAPI.setDefaultSetup(setup.id);
+        if (result && result.setup) {
+          applySavedSetup(result.setup);
+          upsertSavedSetup(result.setup);
+        }
+        setMessage('Default setup updated.', false);
+        return;
+      }
+
+      savedSetups = savedSetups.map(function (item) {
+        return Object.assign({}, item, { isDefault: String(item.id) === String(setup.id) });
+      });
+      setup.isDefault = true;
+      applySavedSetup(setup);
+      persistLocalSetups(savedSetups);
+      setMessage('Default setup updated locally.', false);
+    } catch (error) {
+      setMessage(error.message || 'Could not update default setup.', true);
+    }
+  }
+
+  async function deleteCurrentSetup() {
+    const setup = serializeActiveSetup();
+    if (!setup.id) {
+      setMessage('Save the setup first before deleting it.', true);
+      return;
+    }
+
+    if (!window.confirm('Delete this setup?')) {
+      return;
+    }
+
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        await FrontendAPI.deleteSetup(setup.id);
+        await reloadSetups();
+        setMessage('Setup deleted.', false);
+        return;
+      }
+
+      savedSetups = loadLocalSetups().filter(function (item) {
+        return String(item.id) !== String(setup.id);
+      });
+      persistLocalSetups(savedSetups);
+      if (savedSetups.length > 0) {
+        applySavedSetup(savedSetups[0]);
+      } else {
+        createNewSetup();
+      }
+      setMessage('Setup deleted locally.', false);
+    } catch (error) {
+      setMessage(error.message || 'Could not delete setup.', true);
+    }
+  }
+
+  function upsertSavedSetup(setup) {
+    const normalized = normalizeSetup(setup);
+    const index = savedSetups.findIndex(function (item) { return String(item.id) === String(normalized.id); });
+    if (index >= 0) {
+      savedSetups[index] = normalized;
+    } else {
+      savedSetups.unshift(normalized);
+    }
+
+    if (normalized.isDefault) {
+      savedSetups = savedSetups.map(function (item) {
+        return Object.assign({}, item, { isDefault: String(item.id) === String(normalized.id) });
+      });
+    }
+
+    renderList();
+  }
+
+  function loadLocalSetups() {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(normalizeSetup) : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function persistLocalSetups(setups) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(setups || []));
+  }
+
+  async function reloadSetups() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = await FrontendAPI.listSetups();
+        savedSetups = Array.isArray(result && result.setups) ? result.setups.map(normalizeSetup) : [];
+      } else {
+        savedSetups = loadLocalSetups();
+      }
+
+      if (savedSetups.length === 0) {
+        if (!(window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode())) {
+          const setup = createEmptySetup();
+          setup.id = uuid('setup');
+          setup.isDefault = true;
+          savedSetups = [setup];
+          persistLocalSetups(savedSetups);
+        }
+      }
+
+      const defaultSetup = savedSetups.find(function (item) { return item.isDefault; }) || savedSetups[0] || null;
+      if (defaultSetup) {
+        applySavedSetup(defaultSetup);
+      } else {
+        createNewSetup();
+      }
+      renderList();
+      setMessage('Setups loaded.', false);
+    } catch (error) {
+      setMessage(error.message || 'Could not load setups.', true);
+    }
+  }
+
+  async function reloadSuggestedSetups() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = await FrontendAPI.listSuggestedSetups();
+        suggestedSetups = Array.isArray(result && result.setups) ? result.setups.map(normalizeSetup) : [];
+      } else {
+        suggestedSetups = [
+          normalizeSetup({
+            id: 'suggested-ema-vwap',
+            name: 'EMA + VWAP Setup',
+            preTradeSegments: cloneSetup(starterSegments.preTradeSegments),
+            postTradeSegments: cloneSetup(starterSegments.postTradeSegments)
+          }),
+          normalizeSetup({
+            id: 'suggested-smc-liquidity',
+            name: 'SMC Liquidity Setup',
+            preTradeSegments: [
+              {
+                id: 'higher-timeframe-setup',
+                title: 'Higher Timeframe Setup',
+                items: [
+                  { id: 'htf-poi', title: 'Price has tapped a HTF POI', description: 'Order Block (OB) or Fair Value Gap (FVG) on the higher timeframe has been reached.', required: true, allowMedia: true },
+                  { id: 'htf-reaction', title: 'Price is reacting to the POI (not just touching)', description: 'Look for rejection candles, wicks, or displacement away from the zone.', required: true, allowMedia: true }
+                ]
+              },
+              {
+                id: 'liquidity-sweep',
+                title: 'Liquidity Sweep',
+                items: [
+                  { id: 'sweep', title: 'A liquidity pool has been swept', description: 'Buy-side (BSL) swept for shorts and Sell-side (SSL) swept for longs.', required: true, allowMedia: true },
+                  { id: 'sweep-reaction', title: 'Price has reacted to the sweep', description: 'Sharp reversal or strong close back inside range after the sweep wick.', required: true, allowMedia: true }
+                ]
+              },
+              {
+                id: 'trade-bias',
+                title: 'Trade Bias',
+                items: [
+                  { id: 'choch-confirmed', title: 'CHoCH confirmed on LTF in trade direction', description: 'Structure shift supports your long or short bias.', required: true, allowMedia: true },
+                  { id: 'fvg-from-choch', title: 'FVG identified from CHoCH leg', description: 'Use retracement into this FVG as your execution area.', required: true, allowMedia: true }
+                ]
+              },
+              {
+                id: 'entry-levels-and-tp',
+                title: 'Entry Levels & Take Profit',
+                items: [
+                  { id: 'rr-calculator', title: 'Entry, SL and nearest LRL entered in calculator', description: 'Confirm risk is valid before trigger.', required: true, allowMedia: false },
+                  { id: 'tp-and-be-plan', title: 'TP set and breakeven plan defined', description: 'TP at 1:2 RR or nearest LRL (whichever is closer), with BE move at +1R.', required: true, allowMedia: false }
+                ]
+              },
+              {
+                id: 'final-filters',
+                title: 'Final Filters',
+                items: [
+                  { id: 'session-check', title: 'Active session check passed', description: 'Prefer London or New York session for execution quality.', required: true, allowMedia: false },
+                  { id: 'news-and-filters', title: 'News and final filters check passed', description: 'No high-impact news conflict and trade aligns with your filter rules.', required: true, allowMedia: false }
+                ]
+              }
+            ],
+            postTradeSegments: [
+              {
+                id: 'execution-review',
+                title: 'Execution Review',
+                items: [
+                  { id: 'entry-quality', title: 'Entry quality scored', description: 'Was entry at intended liquidity zone?', required: true, allowMedia: true },
+                  { id: 'risk-control', title: 'Risk management respected', description: 'Check if stop and position sizing were followed.', required: true, allowMedia: false },
+                  { id: 'target-logic', title: 'Target selection respected structure', description: 'Was TP selected using opposing liquidity or structure?', required: true, allowMedia: true }
+                ]
+              },
+              {
+                id: 'smc-journal-notes',
+                title: 'SMC Journal Notes',
+                items: [
+                  { id: 'emotion-check', title: 'Emotional state documented', description: 'Record emotional changes through the trade.', required: false, allowMedia: false },
+                  { id: 'rule-violations', title: 'Any rule violations documented', description: 'Capture misses to prevent repeated errors.', required: true, allowMedia: false },
+                  { id: 'one-improvement', title: 'One improvement action defined', description: 'Write one actionable fix for next session.', required: true, allowMedia: false }
+                ]
+              }
+            ]
+          })
+        ];
+      }
+    } catch (error) {
+      suggestedSetups = [];
+    }
+
+    renderSuggestedList();
+  }
+
+  function loadSuggestedSetup(index) {
+    const setup = suggestedSetups[index];
+    if (!setup) return;
+
+    const next = normalizeSetup(cloneSetup(setup));
+    next.id = null;
+    next.isDefault = false;
+    next.name = (setup.name || 'Suggested Setup') + ' Copy';
+    applySavedSetup(next);
+    setMessage('Loaded suggested setup: ' + (setup.name || 'Suggested Setup') + '. Save to add it to your setups.', false);
+  }
+
+  function selectSetup(index) {
+    const setup = savedSetups[index];
+    if (!setup) return;
+    applySavedSetup(setup);
+    setMessage('Loaded setup: ' + (setup.name || 'Untitled Setup'), false);
+  }
+
+  function addStarterSegmentToActive(fieldName) {
+    const setup = getCurrentSetup();
+    const seed = cloneSetup(starterSegments[fieldName][0]);
+    seed.id = seed.id || uuid(fieldName + '-segment');
+    seed.items = seed.items.map(function (item) {
+      return Object.assign({}, item, { id: item.id || uuid(fieldName + '-item') });
+    });
+    setup[fieldName].push(seed);
+    renderEditor();
+  }
+
+  async function initPage() {
+    initSidebarProfile();
+    const defaultInput = document.getElementById('setup-default');
+    if (defaultInput) {
+      defaultInput.addEventListener('change', function () {
+        defaultCheckboxTouched = true;
+      });
+    }
+
+    document.addEventListener('click', function (event) {
+      if (event.target.closest('#side-nav') === null && event.target.closest('.menu-toggle') === null) {
+        toggleSidebar(false);
+      }
+    });
+
+    switchTab('pretrade');
+    await reloadSetups();
+    await reloadSuggestedSetups();
+
+    const activeFromStorage = localStorage.getItem(ACTIVE_SETUP_KEY);
+    if (activeFromStorage) {
+      try {
+        const parsed = JSON.parse(activeFromStorage);
+        if (parsed && typeof parsed === 'object') {
+          applySavedSetup(parsed);
+          setMessage('Loaded previously selected setup.', false);
+          return;
+        }
+      } catch (error) {
+        // ignore bad state
+      }
+    }
+
+    if (!activeSetup || !activeSetup.id) {
+      createNewSetup();
+    }
+  }
+
+  window.createNewSetup = createNewSetup;
+  window.reloadSetups = reloadSetups;
+  window.saveSetup = saveSetup;
+  window.loadIntoChecklist = loadIntoChecklist;
+  window.setActiveAsDefault = setActiveAsDefault;
+  window.deleteCurrentSetup = deleteCurrentSetup;
+  window.switchTab = switchTab;
+  window.addSegment = addSegment;
+  window.addStarterSegment = addStarterSegmentToActive;
+  window.addItem = addItem;
+  window.updateSegment = updateSegment;
+  window.updateItem = updateItem;
+  window.removeSegment = removeSegment;
+  window.removeItem = removeItem;
+  window.selectSetup = selectSetup;
+  window.loadSuggestedSetup = loadSuggestedSetup;
+  window.viewSetup = viewSetup;
+  window.closeSetupPreview = closeSetupPreview;
+
+  initPage();
+</script>
+</body>
+</html>

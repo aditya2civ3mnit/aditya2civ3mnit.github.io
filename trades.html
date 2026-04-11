@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMC Trade List</title>
+<script src="frontend-env.js"></script>
+<script src="frontend-api.js"></script>
+<script src="toast.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e242c;
+    --border2: #252c36;
+    --text: #c8d0da;
+    --muted: #4a5568;
+    --blue: #5090e0;
+    --blue-bg: #0f1828;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+
+  .menu-toggle {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1101;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    background: rgba(17, 20, 24, 0.95);
+    color: #dbe5f2;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .profile-shortcut {
+    position: fixed;
+    right: 14px;
+    top: 14px;
+    z-index: 1101;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    background: rgba(17, 20, 24, 0.95);
+    padding: 4px 10px 4px 4px;
+    color: #dbe5f2;
+    max-width: 170px;
+  }
+
+  .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #3866a5, #24487a);
+    border: 1px solid #3f5f8f;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5efff;
+  }
+
+  .profile-shortcut-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .side-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 10, 0.55);
+    z-index: 1098;
+    display: none;
+  }
+
+  .side-backdrop.open { display: block; }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, rgba(22, 27, 35, 0.98), rgba(14, 18, 24, 0.98));
+    border-right: 1px solid var(--border2);
+    padding: 56px 14px 14px;
+    z-index: 1099;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .side-nav.open { transform: translateX(0); }
+
+  .side-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #9fb0c8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .side-link {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    margin-bottom: 8px;
+    background: rgba(17, 20, 24, 0.86);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .side-link.active {
+    border-color: var(--blue);
+    color: #d7e6ff;
+    background: var(--blue-bg);
+  }
+
+  .side-main {
+    display: block;
+  }
+
+  .side-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border2);
+    padding-top: 12px;
+  }
+
+  .side-signout-btn {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    background: rgba(32, 18, 22, 0.82);
+    color: #f1beca;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .side-signout-btn:hover {
+    border-color: #8b3a4a;
+    color: #ffd7df;
+  }
+
+  .side-support-link {
+    display: block;
+    margin-top: 8px;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: #9ec3ff;
+    background: rgba(14, 23, 35, 0.84);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .side-support-link:hover {
+    border-color: #4a74ab;
+    color: #c8deff;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .page-head {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 16px;
+  }
+
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e7edf7;
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: 1.2fr 0.7fr 0.8fr 0.8fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 10px 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  .btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 11px;
+    cursor: pointer;
+  }
+
+  .btn:hover { border-color: var(--blue); }
+
+  .status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .monthly-card {
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: rgba(17, 20, 24, 0.86);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .monthly-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .monthly-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .monthly-nav .btn {
+    padding: 6px 8px;
+    min-width: 34px;
+  }
+
+  .monthly-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #d8e2f0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .monthly-stats {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 3px 8px;
+    color: var(--text);
+  }
+
+  .chip.green { border-color: #2f7b57; color: #97efbf; background: rgba(17, 46, 33, 0.8); }
+  .chip.red { border-color: #8b3a4a; color: #ffb2bf; background: rgba(59, 20, 28, 0.85); }
+  .chip.gray { border-color: #4c5b70; color: #c4d0e2; background: rgba(30, 38, 49, 0.85); }
+
+  .monthly-grid-wrap {
+    display: grid;
+    grid-template-columns: 1fr 145px;
+    gap: 10px;
+  }
+
+  .monthly-weekdays,
+  .monthly-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .monthly-weekdays div {
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 6px;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .day-box {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    min-height: 64px;
+    padding: 6px;
+    background: rgba(17, 20, 24, 0.6);
+  }
+
+  .day-box.none { opacity: 0.65; }
+  .day-box.green { border-color: #2f7b57; background: rgba(14, 40, 28, 0.92); }
+  .day-box.red { border-color: #8b3a4a; background: rgba(52, 18, 24, 0.9); }
+  .day-box.flat { border-color: #7b6f2f; background: rgba(42, 36, 12, 0.9); }
+
+  .day-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #cfd8e6;
+    text-align: right;
+  }
+
+  .day-pnl {
+    margin-top: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #dbe5f2;
+  }
+
+  .day-meta {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .weekly-boxes {
+    display: grid;
+    gap: 6px;
+  }
+
+  .week-box {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px;
+    background: rgba(17, 20, 24, 0.6);
+  }
+
+  .week-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .week-pnl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    margin-top: 2px;
+    color: #dbe5f2;
+  }
+
+  .week-meta {
+    font-size: 10px;
+    color: #9bc3ff;
+    margin-top: 2px;
+  }
+
+  .list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .card {
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: rgba(17, 20, 24, 0.86);
+    padding: 12px;
+  }
+
+  .card.state-placed {
+    border-color: #3f5f8f;
+    background: rgba(17, 30, 48, 0.88);
+  }
+
+  .card.state-running {
+    border-color: #2f7b57;
+    background: rgba(14, 36, 27, 0.9);
+  }
+
+  .card.outcome-win {
+    border-color: #2f7b57;
+    background: rgba(14, 40, 28, 0.92);
+  }
+
+  .card.outcome-loss {
+    border-color: #8b3a4a;
+    background: rgba(52, 18, 24, 0.9);
+  }
+
+  .card.outcome-breakeven {
+    border-color: #7b6f2f;
+    background: rgba(42, 36, 12, 0.9);
+  }
+
+  .card.outcome-cancelled {
+    border-color: #4c5b70;
+    background: rgba(24, 30, 40, 0.88);
+  }
+
+  .card.outcome-pending {
+    border-color: #3f5f8f;
+    background: rgba(17, 30, 48, 0.88);
+  }
+
+  .card.state-archived {
+    border-color: #3a3a3a;
+    background: rgba(30, 30, 30, 0.6);
+    opacity: 0.75;
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #d8e2f0;
+  }
+
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .badge.state-placed {
+    color: #9bc3ff;
+    border-color: #3f5f8f;
+    background: rgba(26, 41, 65, 0.8);
+  }
+
+  .badge.state-running {
+    color: #97efbf;
+    border-color: #2f7b57;
+    background: rgba(17, 46, 33, 0.8);
+  }
+
+  .badge.outcome-win {
+    color: #97efbf;
+    border-color: #2f7b57;
+    background: rgba(17, 46, 33, 0.8);
+  }
+
+  .badge.outcome-loss {
+    color: #ffb2bf;
+    border-color: #8b3a4a;
+    background: rgba(59, 20, 28, 0.85);
+  }
+
+  .badge.outcome-breakeven {
+    color: #ffe18d;
+    border-color: #7b6f2f;
+    background: rgba(53, 45, 16, 0.85);
+  }
+
+  .badge.outcome-cancelled {
+    color: #c4d0e2;
+    border-color: #4c5b70;
+    background: rgba(30, 38, 49, 0.85);
+  }
+
+  .badge.outcome-pending {
+    color: #9bc3ff;
+    border-color: #3f5f8f;
+    background: rgba(26, 41, 65, 0.8);
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .kv { font-size: 12px; color: var(--muted); }
+  .kv b { color: var(--text); font-weight: 500; }
+
+  .note {
+    font-size: 12px;
+    color: var(--text);
+    border-left: 2px solid var(--border2);
+    padding-left: 8px;
+    margin-bottom: 8px;
+    line-height: 1.45;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .empty {
+    border: 1px dashed var(--border2);
+    border-radius: 12px;
+    color: var(--muted);
+    padding: 20px;
+    text-align: center;
+  }
+
+  /* Presentation Modal */
+  .presentation-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 2000;
+    overflow-y: auto;
+  }
+
+  .presentation-modal.active {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .presentation-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 12, 15, 0.98);
+    position: sticky;
+    top: 0;
+    z-index: 2001;
+  }
+
+  .presentation-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e7edf7;
+  }
+
+  .presentation-counter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .presentation-close {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .presentation-close:hover {
+    border-color: var(--blue);
+    color: #d7e6ff;
+  }
+
+  .presentation-content {
+    flex: 1;
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .slide {
+    display: none;
+  }
+
+  .slide.active {
+    display: block;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-header {
+    margin-bottom: 20px;
+  }
+
+  .slide-section {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9bc3ff;
+    margin-bottom: 8px;
+  }
+
+  .slide-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #e7edf7;
+    margin-bottom: 12px;
+  }
+
+  .media-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+
+  .media-item {
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0d1015;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .media-item:hover {
+    border-color: var(--blue);
+    transform: scale(1.02);
+  }
+
+  .media-item img,
+  .media-item video {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .media-item-name {
+    padding: 10px;
+    font-size: 12px;
+    color: var(--text);
+    border-top: 1px solid var(--border2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .checklist-items {
+    display: grid;
+    gap: 12px;
+  }
+
+  .checklist-item-display {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 14px;
+    background: rgba(24, 28, 34, 0.5);
+  }
+
+  .checklist-item-display.checked {
+    border-color: #52c77a;
+    background: rgba(15, 30, 20, 0.4);
+  }
+
+  .checkbox-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  .checklist-item-display.checked .checkbox-icon {
+    border-color: #52c77a;
+    background: #52c77a;
+  }
+
+  .checklist-item-text {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .checklist-item-display.checked .checklist-item-text {
+    color: #adefff;
+  }
+
+  .presentation-nav {
+    padding: 20px;
+    border-top: 1px solid var(--border2);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(10, 12, 15, 0.98);
+    position: sticky;
+    bottom: 0;
+  }
+
+  .nav-btn {
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex: 1;
+    max-width: 150px;
+  }
+
+  .nav-btn:hover {
+    border-color: var(--blue);
+  }
+
+  .nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Lightbox Modal */
+  .media-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.98);
+    z-index: 3000;
+  }
+
+  .media-lightbox.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lightbox-container {
+    position: relative;
+    width: 90%;
+    max-width: 900px;
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lightbox-media {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .lightbox-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: rgba(10, 12, 15, 0.95);
+    padding: 16px 20px;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+  }
+
+  .lightbox-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .lightbox-btn:hover {
+    border-color: var(--blue);
+  }
+
+  .lightbox-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .lightbox-counter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(10, 12, 15, 0.95);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lightbox-close:hover {
+    border-color: var(--blue);
+    color: #d7e6ff;
+  }
+
+
+  @media (max-width: 860px) {
+    .filters {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .monthly-grid-wrap {
+      grid-template-columns: 1fr;
+    }
+
+    .filters {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-toggle" type="button" onclick="toggleSidebar(true)">☰</button>
+<a class="profile-shortcut" href="profile.html" aria-label="Open profile settings">
+  <span class="profile-avatar" id="profile-shortcut-avatar">A</span>
+  <span class="profile-shortcut-name" id="profile-shortcut-name">Profile</span>
+</a>
+<div id="side-backdrop" class="side-backdrop" onclick="toggleSidebar(false)"></div>
+<nav id="side-nav" class="side-nav">
+  <div class="side-main">
+    <div class="side-title">Navigation</div>
+    <a class="side-link" href="index.html">Pre/Post Checklist</a>
+    <a class="side-link" href="setups.html">Setup Canvas</a>
+    <a class="side-link active" href="trades.html">List Of Trades</a>
+    <a class="side-link" href="watchlist.html">Watchlist</a>
+  </div>
+  <div class="side-footer">
+    <button class="side-signout-btn" type="button" onclick="signOutFromSidebar()">Sign Out</button>
+    <a class="side-support-link" href="mailto:support@example.com">Contact Support</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-head">
+    <div class="title">List Of Trades</div>
+    <div class="subtitle">Select any saved trade and load it into your checklist page.</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" type="button" onclick="refreshTrades()">Refresh</button>
+    <button class="btn" type="button" onclick="clearFilters()">Clear Filters</button>
+    <button class="btn" type="button" onclick="clearTrades()">Clear All</button>
+  </div>
+
+  <section class="monthly-card">
+    <div class="monthly-head">
+      <div class="monthly-nav">
+        <button class="btn" type="button" onclick="changeSummaryMonth(-1)">‹</button>
+        <div class="monthly-title" id="monthly-title">Monthly Summary</div>
+        <button class="btn" type="button" onclick="changeSummaryMonth(1)">›</button>
+      </div>
+      <div class="monthly-stats" id="monthly-stats"></div>
+    </div>
+    <div class="monthly-grid-wrap">
+      <div>
+        <div class="monthly-weekdays">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="monthly-grid" id="monthly-grid"></div>
+      </div>
+      <div class="weekly-boxes" id="weekly-boxes"></div>
+    </div>
+  </section>
+
+  <div class="filters">
+    <input class="field" id="filter-search" type="text" placeholder="Search notes, prices, date..." oninput="applyFilters()"/>
+    <select class="field" id="filter-bias" onchange="applyFilters()">
+      <option value="all">Bias: All</option>
+      <option value="long">Bias: Long</option>
+      <option value="short">Bias: Short</option>
+    </select>
+    <input class="field" id="filter-from" type="date" onchange="applyFilters()"/>
+    <input class="field" id="filter-to" type="date" onchange="applyFilters()"/>
+  </div>
+
+  <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text); cursor:pointer;">
+      <input type="checkbox" id="show-archived" onchange="applyFilters()" style="cursor:pointer;"/>
+      <span>Show Archived</span>
+    </label>
+  </div>
+
+  <div class="status" id="trade-status">0 trades saved</div>
+  <div class="list" id="trade-list">
+    <div class="empty">No saved trades yet.</div>
+  </div>
+</div>
+
+<!-- Presentation Modal -->
+<div id="presentation-modal" class="presentation-modal">
+  <div class="presentation-header">
+    <div>
+      <div class="presentation-title" id="pres-title">Trade Presentation</div>
+      <div class="presentation-counter" id="pres-counter">Slide 1 of 6</div>
+    </div>
+    <button class="presentation-close" type="button" onclick="closePresentation()">✕</button>
+  </div>
+  
+  <div class="presentation-content" id="pres-content">
+    <!-- Slides will be generated here -->
+  </div>
+  
+  <div class="presentation-nav">
+    <button class="nav-btn" type="button" onclick="prevSlide()" id="prev-btn">← Previous</button>
+    <button class="nav-btn" type="button" onclick="nextSlide()" id="next-btn">Next →</button>
+  </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="media-lightbox" class="media-lightbox">
+  <div class="lightbox-container">
+    <button class="lightbox-close" type="button" onclick="closeMediaLightbox()">✕</button>
+    <div id="lightbox-media-wrapper"></div>
+    <div class="lightbox-controls">
+      <button class="lightbox-btn" type="button" onclick="prevMediaItem()" id="lightbox-prev">← Prev</button>
+      <div class="lightbox-counter"><span id="lightbox-counter">1 / 1</span></div>
+      <button class="lightbox-btn" type="button" onclick="nextMediaItem()" id="lightbox-next">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TRADE_STORAGE_KEY = 'smc_trade_records_v1';
+  const ACTIVE_TRADE_KEY = 'smc_active_trade_v1';
+  const ACTIVE_TRADE_ID_KEY = 'smc_active_trade_id_v1';
+  const SELECTED_TRADE_PAYLOAD_KEY = 'smc_selected_trade_payload_v1';
+  const tradeRecords = [];
+  let filteredIndexMap = [];
+  let summaryMonthCursor = new Date();
+
+  function formatSignedUsd(value) {
+    const amount = Number(value || 0);
+    if (!Number.isFinite(amount)) return '$0';
+    const prefix = amount > 0 ? '+' : '';
+    return prefix + '$' + amount.toFixed(0);
+  }
+
+  function renderMonthlySummary(summary) {
+    const title = document.getElementById('monthly-title');
+    const stats = document.getElementById('monthly-stats');
+    const grid = document.getElementById('monthly-grid');
+    const weekly = document.getElementById('weekly-boxes');
+    if (!title || !stats || !grid || !weekly) return;
+
+    if (!summary || typeof summary !== 'object' || !summary.month) {
+      title.textContent = 'Monthly Summary';
+      stats.innerHTML = '<span class="chip gray">No data</span>';
+      grid.innerHTML = '';
+      weekly.innerHTML = '';
+      return;
+    }
+
+    const year = Number(summary.month.year);
+    const month = Number(summary.month.month);
+    const monthName = new Date(Date.UTC(year, month - 1, 1)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    title.textContent = monthName;
+
+    const totals = summary.totals || {};
+    stats.innerHTML = ''
+      + '<span class="chip green">Green: ' + (totals.greenDays || 0) + '</span>'
+      + '<span class="chip red">Red: ' + (totals.redDays || 0) + '</span>'
+      + '<span class="chip gray">Flat: ' + (totals.flatDays || 0) + '</span>'
+      + '<span class="chip ' + ((totals.pnl || 0) >= 0 ? 'green' : 'red') + '">P/L: ' + formatSignedUsd(totals.pnl || 0) + '</span>';
+
+    const firstWeekday = Number(summary.month.firstWeekday || 0);
+    const totalDays = Number(summary.month.totalDays || 0);
+    const dayMap = {};
+    (Array.isArray(summary.days) ? summary.days : []).forEach(function (day) {
+      dayMap[String(day.day)] = day;
+    });
+
+    const cells = [];
+    for (let i = 0; i < firstWeekday; i += 1) {
+      cells.push('<div class="day-box none"></div>');
+    }
+
+    for (let day = 1; day <= totalDays; day += 1) {
+      const entry = dayMap[String(day)] || { day: day, pnl: 0, tradeCount: 0, status: 'none' };
+      const statusClass = entry.status || 'none';
+      const pnlText = entry.tradeCount > 0 ? formatSignedUsd(entry.pnl || 0) : '$0';
+      const metaText = entry.tradeCount > 0 ? (String(entry.tradeCount) + ' trades') : '0 trades';
+      cells.push(''
+        + '<div class="day-box ' + statusClass + '">'
+        + '<div class="day-num">' + day + '</div>'
+        + '<div class="day-pnl">' + pnlText + '</div>'
+        + '<div class="day-meta">' + metaText + '</div>'
+        + '</div>');
+    }
+
+    grid.innerHTML = cells.join('');
+
+    const weekItems = Array.isArray(summary.weeks) ? summary.weeks : [];
+    weekly.innerHTML = weekItems.map(function (week) {
+      const pnlClass = Number(week.pnl || 0) >= 0 ? 'green' : 'red';
+      return ''
+        + '<div class="week-box">'
+        + '<div class="week-label">Week ' + week.week + '</div>'
+        + '<div class="week-pnl" style="color:' + (pnlClass === 'green' ? '#97efbf' : '#ffb2bf') + ';">' + formatSignedUsd(week.pnl || 0) + '</div>'
+        + '<div class="week-meta">' + (week.tradeDays || 0) + ' active days</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  async function loadMonthlySummary() {
+    const year = summaryMonthCursor.getFullYear();
+    const month = summaryMonthCursor.getMonth() + 1;
+
+    if (!(window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode() && FrontendAPI.getMonthlyTradeSummary)) {
+      renderMonthlySummary(null);
+      return;
+    }
+
+    try {
+      const result = await FrontendAPI.getMonthlyTradeSummary(year, month);
+      renderMonthlySummary(result && result.summary ? result.summary : null);
+    } catch (error) {
+      console.error('Failed to load monthly summary', error);
+      renderMonthlySummary(null);
+    }
+  }
+
+  function changeSummaryMonth(delta) {
+    summaryMonthCursor = new Date(summaryMonthCursor.getFullYear(), summaryMonthCursor.getMonth() + Number(delta || 0), 1);
+    loadMonthlySummary();
+  }
+
+  function toggleSidebar(open) {
+    const nav = document.getElementById('side-nav');
+    const backdrop = document.getElementById('side-backdrop');
+    nav.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+  }
+
+  function getSidebarSession() {
+    if (window.FrontendAPI && FrontendAPI.getSession) {
+      return FrontendAPI.getSession() || null;
+    }
+
+    try {
+      const raw = localStorage.getItem('auth_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function initSidebarProfile() {
+    const profile = document.getElementById('profile-shortcut-name');
+    const avatar = document.getElementById('profile-shortcut-avatar');
+    if (!profile || !avatar) return;
+    const session = getSidebarSession();
+    const label = session && (session.name || session.username || session.userId)
+      ? String(session.name || session.username || session.userId)
+      : 'Trader';
+    profile.textContent = label;
+    avatar.textContent = String(label).trim().slice(0, 1).toUpperCase() || 'A';
+  }
+
+  async function signOutFromSidebar() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.logout) {
+        await FrontendAPI.logout();
+      } else {
+        localStorage.removeItem('auth_session');
+      }
+    } catch (err) {
+      localStorage.removeItem('auth_session');
+    }
+
+    window.location.replace('signin.html');
+  }
+
+  async function loadTradeRecords() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const result = await FrontendAPI.listTrades();
+        const records = result && Array.isArray(result.trades) ? result.trades : [];
+        tradeRecords.length = 0;
+        records.forEach(item => tradeRecords.push(item));
+        return;
+      }
+
+      const raw = localStorage.getItem(TRADE_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      tradeRecords.length = 0;
+      if (Array.isArray(parsed)) parsed.forEach(item => tradeRecords.push(item));
+    } catch (err) {
+      tradeRecords.length = 0;
+      console.error('Failed to load trades', err);
+    }
+  }
+
+  function persistTradeRecords() {
+    if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+      return;
+    }
+
+    localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify(tradeRecords));
+  }
+
+  async function clearTrades() {
+    try {
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        const ids = tradeRecords.map(function (trade) { return trade.id; }).filter(Boolean);
+        for (const id of ids) {
+          await FrontendAPI.deleteTrade(id);
+        }
+        tradeRecords.length = 0;
+        renderTrades();
+        return;
+      }
+
+      tradeRecords.length = 0;
+      persistTradeRecords();
+      renderTrades();
+    } catch (err) {
+      AppToast.error('Failed to clear trades: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  async function archiveTrade(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+
+    try {
+      const trade = tradeRecords[index];
+      if (!trade) return;
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        if (trade && trade.id) {
+          await FrontendAPI.updateTrade(trade.id, { archived: true, deletedAt: new Date().toISOString() });
+        }
+        await refreshTrades();
+        AppToast.success('Trade archived. Check "Show Archived" to view it again.');
+        return;
+      }
+
+      // Local fallback mode only.
+      trade.archived = true;
+      trade.deletedAt = new Date().toISOString();
+
+      persistTradeRecords();
+      renderTrades();
+      AppToast.success('Trade archived. Check "Show Archived" to view it again.');
+    } catch (err) {
+      AppToast.error('Failed to archive trade: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  async function deleteTrade(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+
+    try {
+      const trade = tradeRecords[index];
+      if (!trade) return;
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        if (trade && trade.id) {
+          await FrontendAPI.deleteTrade(trade.id);
+        }
+        await refreshTrades();
+        AppToast.success('Trade deleted permanently.');
+        return;
+      }
+
+      // Local fallback mode only.
+      tradeRecords.splice(index, 1);
+      persistTradeRecords();
+      renderTrades();
+      AppToast.success('Trade deleted permanently.');
+    } catch (err) {
+      AppToast.error('Failed to delete trade: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  async function restoreTrade(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+
+    try {
+      const trade = tradeRecords[index];
+      if (!trade) return;
+
+      if (window.FrontendAPI && FrontendAPI.isApiMode && FrontendAPI.isApiMode()) {
+        if (trade && trade.id) {
+          await FrontendAPI.updateTrade(trade.id, { archived: false, deletedAt: null });
+        }
+        await refreshTrades();
+        AppToast.success('Trade restored.');
+        return;
+      }
+
+      // Local fallback mode only.
+      trade.archived = false;
+      trade.deletedAt = null;
+
+      persistTradeRecords();
+      renderTrades();
+      AppToast.success('Trade restored.');
+    } catch (err) {
+      AppToast.error('Failed to restore trade: ' + (err && err.message ? err.message : 'Unknown error'));
+    }
+  }
+
+  function loadIntoChecklist(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+    const trade = tradeRecords[index];
+    if (!trade) return;
+    console.log('Loading trade into checklist', trade);
+
+    const tradeId = trade.id != null ? String(trade.id) : '';
+    console.log('Trade ID to load:', tradeId);
+    localStorage.setItem(ACTIVE_TRADE_ID_KEY, tradeId);
+    localStorage.setItem(SELECTED_TRADE_PAYLOAD_KEY, JSON.stringify(trade));
+
+    window.location.href = tradeId ? ('index.html?loadTradeId=' + encodeURIComponent(tradeId)) : 'index.html';
+  }
+
+  function clearFilters() {
+    document.getElementById('filter-search').value = '';
+    document.getElementById('filter-bias').value = 'all';
+    document.getElementById('filter-from').value = '';
+    document.getElementById('filter-to').value = '';
+    document.getElementById('show-archived').checked = false;
+    applyFilters();
+  }
+
+  function getFilteredTrades() {
+    const query = document.getElementById('filter-search').value.trim().toLowerCase();
+    const bias = document.getElementById('filter-bias').value;
+    const fromVal = document.getElementById('filter-from').value;
+    const toVal = document.getElementById('filter-to').value;
+    const showArchived = document.getElementById('show-archived').checked;
+
+    const fromTs = fromVal ? new Date(fromVal + 'T00:00:00').getTime() : null;
+    const toTs = toVal ? new Date(toVal + 'T23:59:59').getTime() : null;
+
+    filteredIndexMap = [];
+    const filtered = [];
+
+    tradeRecords.forEach((trade, index) => {
+      const createdTs = new Date(trade.createdAt || Date.now()).getTime();
+      const tradeBias = (trade.bias || '').toLowerCase();
+      const isArchived = trade.archived === true || trade.deletedAt != null;
+      const setupName = trade.setupName || (trade.setupSnapshot && trade.setupSnapshot.name) || '';
+      const instrument = trade.instrument || '';
+      const tradeTimestamp = trade.tradeTimestamp || '';
+      const pnlAmount = trade.notes && trade.notes.pnlAmount ? trade.notes.pnlAmount : '';
+      const pnlCurrency = trade.notes && trade.notes.pnlCurrency ? trade.notes.pnlCurrency : '';
+      const reviewNotes = trade.notes && trade.notes.reviewNotes ? trade.notes.reviewNotes : '';
+      
+      const haystack = [
+        trade.createdAt || '',
+        trade.tradeName || '',
+        setupName,
+        instrument,
+        tradeTimestamp,
+        pnlAmount,
+        pnlCurrency,
+        reviewNotes,
+        tradeBias,
+        trade.notes && trade.notes.ideal ? trade.notes.ideal : '',
+        trade.notes && trade.notes.real ? trade.notes.real : '',
+        trade.prices && trade.prices.entry ? trade.prices.entry : '',
+        trade.prices && trade.prices.sl ? trade.prices.sl : '',
+        trade.prices && trade.prices.lrl ? trade.prices.lrl : ''
+      ].join(' ').toLowerCase();
+
+      // Filter archived trades unless show-archived is checked
+      if (isArchived && !showArchived) return;
+      
+      if (bias !== 'all' && tradeBias !== bias) return;
+      if (fromTs !== null && createdTs < fromTs) return;
+      if (toTs !== null && createdTs > toTs) return;
+      if (query && !haystack.includes(query)) return;
+
+      filteredIndexMap.push(index);
+      filtered.push(trade);
+    });
+
+    return filtered;
+  }
+
+  function applyFilters() {
+    renderTrades();
+  }
+
+  function renderTrades() {
+    const status = document.getElementById('trade-status');
+    const list = document.getElementById('trade-list');
+    const filteredTrades = getFilteredTrades();
+    status.textContent = filteredTrades.length + ' shown / ' + tradeRecords.length + ' saved';
+
+    if (filteredTrades.length === 0) {
+      list.innerHTML = '<div class="empty">No trades match your filters.</div>';
+      return;
+    }
+
+    list.innerHTML = filteredTrades.map((trade, idx) => {
+      const at = new Date(trade.createdAt || Date.now()).toLocaleString();
+      const tradeName = trade.tradeName || 'Untitled trade';
+      const setupName = trade.setupName || (trade.setupSnapshot && trade.setupSnapshot.name) || 'Unknown setup';
+      const instrument = trade.instrument || '—';
+      const tradeTimestamp = trade.tradeTimestamp || trade.createdAt || '';
+      const tradeTimestampDate = tradeTimestamp ? new Date(tradeTimestamp) : null;
+      const tradeTimestampLabel = tradeTimestampDate && !Number.isNaN(tradeTimestampDate.getTime())
+        ? tradeTimestampDate.toLocaleString()
+        : '—';
+      const pnlAmount = trade.notes && trade.notes.pnlAmount ? trade.notes.pnlAmount : '';
+      const pnlCurrency = trade.notes && trade.notes.pnlCurrency ? trade.notes.pnlCurrency : '';
+      const pnlLabel = pnlAmount ? (pnlAmount + (pnlCurrency ? ' ' + pnlCurrency : '')) : '—';
+      const reviewNotes = trade.notes && trade.notes.reviewNotes ? trade.notes.reviewNotes : '';
+      const ideal = trade.notes && trade.notes.ideal ? trade.notes.ideal : 'No ideal execution note.';
+      const real = trade.notes && trade.notes.real ? trade.notes.real : 'No real execution note.';
+      const checkedCount = Array.isArray(trade.checkedIds) ? trade.checkedIds.length : 0;
+      const hasProgress = trade.progress && typeof trade.progress === 'object';
+      const checkedProgress = hasProgress && Number.isFinite(Number(trade.progress.checked))
+        ? Number(trade.progress.checked)
+        : checkedCount;
+      const totalProgress = hasProgress && Number.isFinite(Number(trade.progress.total))
+        ? Number(trade.progress.total)
+        : 0;
+      const progress = totalProgress > 0 ? (checkedProgress + '/' + totalProgress) : (checkedProgress + ' checked');
+      const tradeState = trade.notes && trade.notes.tradeState ? trade.notes.tradeState : 'placed';
+      const tradeOutcome = trade.notes && trade.notes.outcome ? trade.notes.outcome : 'pending';
+      const comments = trade.notes && (trade.notes.comments || trade.notes.partialCloseReason) ? (trade.notes.comments || trade.notes.partialCloseReason) : '';
+      const normalizedOutcome = (function () {
+        const value = String(tradeOutcome || '').toLowerCase();
+        if (value === 'win' || value === 'tp-hit') return 'win';
+        if (value === 'loss' || value === 'sl-hit') return 'loss';
+        if (value === 'breakeven') return 'breakeven';
+        if (value === 'cancelled') return 'cancelled';
+        return 'pending';
+      })();
+
+      const outcomeBadgeClass = ' outcome-' + normalizedOutcome;
+      const stateBadgeClass = tradeState === 'placed' || tradeState === 'running' ? ' state-' + tradeState : '';
+      const isArchived = trade.archived === true;
+      let stateCardClass = tradeState === 'placed' || tradeState === 'running' ? ' state-' + tradeState : '';
+      stateCardClass += ' outcome-' + normalizedOutcome;
+      if (isArchived) {
+        stateCardClass += ' state-archived';
+      }
+
+      const actionButtons = isArchived
+        ? '<button class="btn" type="button" onclick="restoreTrade(' + idx + ')">Restore</button>'
+          + '<button class="btn" type="button" onclick="deleteTrade(' + idx + ')">Delete</button>'
+        : '<button class="btn" type="button" onclick="playPresentation(' + idx + ')">▶ Play</button>'
+          + '<button class="btn" type="button" onclick="loadIntoChecklist(' + idx + ')">Load Trade</button>'
+          + '<button class="btn" type="button" onclick="archiveTrade(' + idx + ')">Archive</button>'
+          + '<button class="btn" type="button" onclick="deleteTrade(' + idx + ')">Delete</button>';
+
+      return '<article class="card' + stateCardClass + '">'
+        + '<div class="top"><div><div class="time">' + tradeName + (isArchived ? ' <span style="color:var(--muted); font-size:10px; margin-left:6px;">[ARCHIVED]</span>' : '') + '</div><div class="badge" style="margin-top:4px; display:inline-block;">' + at + '</div></div><div class="badge-row"><div class="badge' + stateBadgeClass + '">' + tradeState + '</div><div class="badge' + outcomeBadgeClass + '">' + tradeOutcome + '</div></div></div>'
+        + '<div class="meta">'
+        + '<div class="kv">Setup: <b style="color:#8ed0ff;">' + setupName + '</b></div>'
+        + '<div class="kv">Instrument: <b>' + instrument + '</b></div>'
+        + '<div class="kv">Trade Time: <b>' + tradeTimestampLabel + '</b></div>'
+        + '<div class="kv">P/L: <b>' + pnlLabel + '</b></div>'
+        + '<div class="kv">Progress: <b>' + progress + '</b></div>'
+        + '<div class="kv">State: <b>' + tradeState + '</b></div>'
+        + '<div class="kv">Bias: <b>' + ((trade.bias || 'n/a')) + '</b></div>'
+        + '<div class="kv">Outcome: <b>' + tradeOutcome + '</b></div>'
+        + '<div class="kv">Entry: <b>' + ((trade.prices && trade.prices.entry) || '-') + '</b></div>'
+        + '<div class="kv">SL: <b>' + ((trade.prices && trade.prices.sl) || '-') + '</b></div>'
+        + '<div class="kv">LRL: <b>' + ((trade.prices && trade.prices.lrl) || '-') + '</b></div>'
+        + '</div>'
+        + (isArchived ? '<div class="note" style="opacity:0.6;">Ideal: ' + ideal + '</div>' : '<div class="note">Ideal: ' + ideal + '</div>')
+        + (isArchived ? '<div class="note" style="opacity:0.6;">Real: ' + real + '</div>' : '<div class="note">Real: ' + real + '</div>')
+        + (isArchived ? '<div class="note" style="opacity:0.6;">Review: ' + (reviewNotes || '—') + '</div>' : '<div class="note">Review: ' + (reviewNotes || '—') + '</div>')
+        + (isArchived ? '<div class="note" style="opacity:0.6;">Comments: ' + (comments || '—') + '</div>' : '<div class="note">Comments: ' + (comments || '—') + '</div>')
+        + '<div class="actions">'
+        + actionButtons
+        + '</div>'
+        + '</article>';
+    }).join('');
+  }
+
+  async function refreshTrades() {
+    await loadTradeRecords();
+    renderTrades();
+    await loadMonthlySummary();
+  }
+
+  let currentPresentation = null;
+  let currentSlideIndex = 0;
+  let currentSlideDefinitions = [];
+  
+  let lightboxMediaItems = [];
+  let lightboxCurrentIndex = 0;
+
+  function flattenWorkflowNodeItems(node, output) {
+    if (!node || typeof node !== 'object') return;
+
+    const nodeId = String(node.id || '').trim();
+    const title = String(node.title || '').trim();
+    const required = node.required !== false;
+    const nodeType = String(node.nodeType || 'item');
+
+    if (nodeType !== 'condition' && nodeId) {
+      output.push({ id: nodeId, title: title || nodeId, required: required });
+    }
+
+    const children = Array.isArray(node.children) ? node.children : [];
+    children.forEach(function (child) {
+      flattenWorkflowNodeItems(child, output);
+    });
+
+    const branches = node.branches && typeof node.branches === 'object' ? node.branches : {};
+    const thenBranch = Array.isArray(branches.then) ? branches.then : [];
+    const elseBranch = Array.isArray(branches.else) ? branches.else : [];
+
+    thenBranch.forEach(function (child) {
+      flattenWorkflowNodeItems(child, output);
+    });
+    elseBranch.forEach(function (child) {
+      flattenWorkflowNodeItems(child, output);
+    });
+  }
+
+  function getSegmentChecklistItems(segment) {
+    const items = [];
+    const roots = Array.isArray(segment && segment.items) ? segment.items : [];
+    roots.forEach(function (root) {
+      flattenWorkflowNodeItems(root, items);
+    });
+    return items;
+  }
+
+  function getSlideDefinitionsForTrade(trade) {
+    const setupSnapshot = trade && trade.setupSnapshot && typeof trade.setupSnapshot === 'object'
+      ? trade.setupSnapshot
+      : null;
+    const preTradeSegments = Array.isArray(setupSnapshot && setupSnapshot.preTradeSegments)
+      ? setupSnapshot.preTradeSegments
+      : [];
+    const postTradeSegments = Array.isArray(setupSnapshot && setupSnapshot.postTradeSegments)
+      ? setupSnapshot.postTradeSegments
+      : [];
+
+    if (preTradeSegments.length > 0 || postTradeSegments.length > 0) {
+      const preSlides = preTradeSegments.map(function (segment, idx) {
+        const segmentId = String(segment && segment.id ? segment.id : ('segment-' + idx));
+        const segmentTitle = String(segment && segment.title ? segment.title : ('Segment ' + (idx + 1)));
+        return {
+          section: segmentId,
+          index: idx,
+          title: String(idx + 1).padStart(2, '0') + ' · ' + segmentTitle,
+          type: 'pretrade-segment',
+          segment: segment
+        };
+      });
+
+      const postSlides = postTradeSegments.map(function (segment, idx) {
+        const segmentId = String(segment && segment.id ? segment.id : ('posttrade-segment-' + idx));
+        const segmentTitle = String(segment && segment.title ? segment.title : ('Post-Trade Segment ' + (idx + 1)));
+        return {
+          section: segmentId,
+          index: idx,
+          title: 'Post · ' + String(idx + 1).padStart(2, '0') + ' · ' + segmentTitle,
+          type: 'posttrade-segment',
+          segment: segment
+        };
+      });
+
+      const summarySlide = [{ section: 'posttrade', title: 'Post-Trade Summary', type: 'posttrade-summary' }];
+      return preSlides.concat(postSlides).concat(summarySlide);
+    }
+
+    return [
+      { section: 'htf', title: '01 · Higher Timeframe Setup', type: 'legacy' },
+      { section: 'liquidity', title: '02 · Liquidity Sweep', type: 'legacy' },
+      { section: 'bias', title: '03 · Trade Bias', type: 'bias' },
+      { section: 'ideal', title: '04 · Ideal Execution', type: 'legacy' },
+      { section: 'real', title: '05 · Real Execution', type: 'legacy' },
+      { section: 'posttrade', title: '06 · Post-Trade (Lifecycle & Outcome)', type: 'posttrade' }
+    ];
+  }
+
+  function getPresentationMediaBySection(trade) {
+    if (!trade || typeof trade !== 'object') {
+      return {};
+    }
+
+    function mergeMediaLists(targetList, sourceList) {
+      const output = Array.isArray(targetList) ? targetList.slice() : [];
+      const seen = new Set(output.map(function (item) {
+        return String((item && (item.key || item.url || item.dataUrl || item.name)) || '').trim();
+      }));
+
+      (Array.isArray(sourceList) ? sourceList : []).forEach(function (item) {
+        const dedupeKey = String((item && (item.key || item.url || item.dataUrl || item.name)) || '').trim();
+        if (!dedupeKey || seen.has(dedupeKey)) {
+          return;
+        }
+        seen.add(dedupeKey);
+        output.push(item);
+      });
+
+      return output;
+    }
+
+    function mergeMediaMap(targetMap, sourceMap) {
+      const out = targetMap && typeof targetMap === 'object' ? targetMap : {};
+      if (!sourceMap || typeof sourceMap !== 'object') {
+        return out;
+      }
+
+      Object.keys(sourceMap).forEach(function (rawKey) {
+        const key = String(rawKey || '').trim();
+        if (!key) {
+          return;
+        }
+        out[key] = mergeMediaLists(out[key], sourceMap[key]);
+      });
+
+      return out;
+    }
+
+    const setupId = String(trade.setupId || '').trim();
+    const mediaBySetup = trade.mediaBySetup && typeof trade.mediaBySetup === 'object' ? trade.mediaBySetup : null;
+    const mergedAcrossSetups = {};
+    if (mediaBySetup) {
+      Object.keys(mediaBySetup).forEach(function (rawSetupId) {
+        const sectionMap = mediaBySetup[rawSetupId];
+        if (sectionMap && typeof sectionMap === 'object') {
+          mergeMediaMap(mergedAcrossSetups, sectionMap);
+        }
+      });
+    }
+
+    if (mediaBySetup && setupId && mediaBySetup[setupId] && typeof mediaBySetup[setupId] === 'object') {
+      return mergeMediaMap(mergeMediaMap({}, mergedAcrossSetups), mediaBySetup[setupId]);
+    }
+
+    if (mediaBySetup) {
+      const setupKeys = Object.keys(mediaBySetup);
+      if (setupKeys.length > 0) {
+        const firstSetupKey = setupKeys[0];
+        if (mediaBySetup[firstSetupKey] && typeof mediaBySetup[firstSetupKey] === 'object') {
+          return mergeMediaMap(mergeMediaMap({}, mergedAcrossSetups), mediaBySetup[firstSetupKey]);
+        }
+      }
+    }
+
+    if (trade.media && typeof trade.media === 'object') {
+      return mergeMediaMap(mergeMediaMap({}, mergedAcrossSetups), trade.media);
+    }
+
+    return mergedAcrossSetups;
+  }
+
+  function normalizeSectionKey(section) {
+    return String(section || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function getMediaListForSection(mediaBySection, section) {
+    if (!mediaBySection || typeof mediaBySection !== 'object') {
+      return [];
+    }
+
+    const direct = mediaBySection[section];
+    if (Array.isArray(direct) && direct.length > 0) {
+      return direct;
+    }
+
+    const sectionNorm = normalizeSectionKey(section);
+    const keys = Object.keys(mediaBySection);
+    for (const key of keys) {
+      if (normalizeSectionKey(key) === sectionNorm) {
+        const list = mediaBySection[key];
+        if (Array.isArray(list) && list.length > 0) {
+          return list;
+        }
+      }
+    }
+
+    const matchedByItemSection = [];
+    keys.forEach(function (key) {
+      const list = Array.isArray(mediaBySection[key]) ? mediaBySection[key] : [];
+      list.forEach(function (item) {
+        if (normalizeSectionKey(item && item.section) === sectionNorm) {
+          matchedByItemSection.push(item);
+        }
+      });
+    });
+    if (matchedByItemSection.length > 0) {
+      return matchedByItemSection;
+    }
+
+    return [];
+  }
+
+  function resolveSlideMediaList(mediaBySection, slide) {
+    const primary = getMediaListForSection(mediaBySection, slide && slide.section);
+    if (primary.length > 0) {
+      return primary;
+    }
+
+    if (slide && slide.type === 'posttrade-segment') {
+      const fallbackKeys = [
+        'posttrade-segment-' + Number(slide.index || 0),
+        'posttrade-segment-' + (Number(slide.index || 0) + 1),
+        'posttrade',
+        'real',
+        'ideal'
+      ];
+
+      for (const key of fallbackKeys) {
+        const list = getMediaListForSection(mediaBySection, key);
+        if (list.length > 0) {
+          return list;
+        }
+      }
+    }
+
+    return [];
+  }
+
+  function playPresentation(filteredIndex) {
+    const index = filteredIndexMap[filteredIndex];
+    if (typeof index !== 'number') return;
+    const trade = tradeRecords[index];
+    if (!trade) return;
+
+    currentPresentation = trade;
+    currentSlideDefinitions = getSlideDefinitionsForTrade(trade);
+    currentSlideIndex = 0;
+    showSlide(0);
+    document.getElementById('presentation-modal').classList.add('active');
+  }
+
+  function closePresentation() {
+    document.getElementById('presentation-modal').classList.remove('active');
+    currentPresentation = null;
+    currentSlideDefinitions = [];
+    currentSlideIndex = 0;
+  }
+
+  function nextSlide() {
+    if (currentSlideIndex < currentSlideDefinitions.length - 1) {
+      currentSlideIndex++;
+      showSlide(currentSlideIndex);
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlideIndex > 0) {
+      currentSlideIndex--;
+      showSlide(currentSlideIndex);
+    }
+  }
+
+  function showSlide(index) {
+    const slide = currentSlideDefinitions[index];
+    if (!slide) return;
+    const content = document.getElementById('pres-content');
+    const modal = document.getElementById('presentation-modal');
+    const mediaBySection = getPresentationMediaBySection(currentPresentation);
+    
+    document.getElementById('pres-title').textContent = currentPresentation.tradeName || 'Trade Presentation';
+    document.getElementById('pres-counter').textContent = 'Slide ' + (index + 1) + ' of ' + currentSlideDefinitions.length;
+    document.getElementById('prev-btn').disabled = index === 0;
+    document.getElementById('next-btn').disabled = index === currentSlideDefinitions.length - 1;
+
+    // Build slide content
+    let html = '<div class="slide active"><div class="slide-header">';
+    html += '<div class="slide-section">' + slide.section.toUpperCase() + '</div>';
+    html += '<div class="slide-title">' + slide.title + '</div>';
+    html += '</div>';
+
+    // Add media for this section
+    const mediaList = resolveSlideMediaList(mediaBySection, slide);
+    lightboxMediaItems = Array.isArray(mediaList) ? mediaList : [];
+    
+    if (Array.isArray(mediaList) && mediaList.length > 0) {
+      html += '<div class="media-showcase">';
+      mediaList.forEach((item, itemIndex) => {
+        const url = item.url || item.dataUrl || '';
+        const name = item.name || 'Media';
+        const isImage = item.type && (item.type.startsWith('image/') || url.includes('.jpg') || url.includes('.png') || url.includes('.gif'));
+        
+        html += '<div class="media-item" onclick="openMediaLightbox(' + itemIndex + ')" style="cursor:pointer;">';
+        if (isImage) {
+          html += '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name) + '"/>';
+        } else if (item.type && item.type.startsWith('video/')) {
+          html += '<video style="pointer-events:none;"><source src="' + escapeHtml(url) + '" type="' + escapeHtml(item.type) + '"/></video>';
+        } else {
+          html += '<div style="height:200px; display:flex; align-items:center; justify-content:center; background:#0d1015;"><span style="color:var(--muted);">File: ' + escapeHtml(name) + '</span></div>';
+        }
+        html += '<div class="media-item-name">' + escapeHtml(name) + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="margin-bottom:30px; color:var(--muted); font-style:italic;">No media attached for this section.</div>';
+    }
+
+    // Add checklist items for this section
+    const sectionMap = {
+      'htf': ['htf-poi', 'htf-reaction'],
+      'liquidity': ['sweep', 'sweep-reaction'],
+      'bias': [], // Bias has its own structure
+      'ideal': [],
+      'real': [],
+      'posttrade': []
+    };
+
+    if (slide.type === 'pretrade-segment' || slide.type === 'posttrade-segment') {
+      const segmentItems = getSegmentChecklistItems(slide.segment);
+      const checkedSource = slide.type === 'posttrade-segment'
+        ? (Array.isArray(currentPresentation.postTradeCheckedIds) ? currentPresentation.postTradeCheckedIds : [])
+        : (Array.isArray(currentPresentation.checkedIds) ? currentPresentation.checkedIds : []);
+      html += '<div class="checklist-items">';
+      if (segmentItems.length === 0) {
+        html += '<div class="checklist-item-text" style="color:var(--muted);">No checklist items in this segment.</div>';
+      } else {
+        segmentItems.forEach(function (item) {
+          const isChecked = checkedSource.includes(item.id);
+          html += '<div class="checklist-item-display' + (isChecked ? ' checked' : '') + '">';
+          html += '<span class="checkbox-icon' + (isChecked ? ' checked' : '') + '"></span>';
+          html += '<span class="checklist-item-text">' + escapeHtml(item.title) + '</span>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+    } else if (slide.section === 'bias') {
+      html += '<div class="checklist-items">';
+      html += '<div style="color:#9bc3ff; margin-bottom:12px; font-size:12px;">Trade Bias: <strong>' + (currentPresentation.bias || 'n/a').toUpperCase() + '</strong></div>';
+      html += '</div>';
+    } else if (slide.section === 'posttrade' || slide.type === 'posttrade-summary') {
+      html += '<div class="checklist-items">';
+      const tradeState = currentPresentation.notes && currentPresentation.notes.tradeState ? currentPresentation.notes.tradeState : 'placed';
+      const outcome = currentPresentation.notes && currentPresentation.notes.outcome ? currentPresentation.notes.outcome : 'pending';
+      const comments = currentPresentation.notes && currentPresentation.notes.comments ? currentPresentation.notes.comments : '';
+      
+      html += '<div class="checklist-item-display">';
+      html += '<div class="checklist-item-text"><strong>State:</strong> ' + escapeHtml(tradeState) + '</div>';
+      html += '</div>';
+      
+      html += '<div class="checklist-item-display">';
+      html += '<div class="checklist-item-text"><strong>Outcome:</strong> ' + escapeHtml(outcome) + '</div>';
+      html += '</div>';
+      
+      if (comments) {
+        html += '<div class="checklist-item-display">';
+        html += '<div class="checklist-item-text"><strong>Comments:</strong> ' + escapeHtml(comments) + '</div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    } else if (sectionMap[slide.section]) {
+      const itemIds = sectionMap[slide.section];
+      html += '<div class="checklist-items">';
+      itemIds.forEach(id => {
+        const isChecked = Array.isArray(currentPresentation.checkedIds) && currentPresentation.checkedIds.includes(id);
+        const title = getChecklistItemTitle(id);
+        html += '<div class="checklist-item-display' + (isChecked ? ' checked' : '') + '">';
+        html += '<span class="checkbox-icon' + (isChecked ? ' checked' : '') + '"></span>';
+        html += '<span class="checklist-item-text">' + escapeHtml(title) + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    content.innerHTML = html;
+  }
+
+  function getChecklistItemTitle(id) {
+    const titles = {
+      'htf-poi': 'Price has tapped a HTF POI',
+      'htf-reaction': 'Price is reacting to the POI (not just touching)',
+      'sweep': 'A liquidity pool has been swept',
+      'sweep-reaction': 'Price has reacted to the sweep'
+    };
+    return titles[id] || id;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function openMediaLightbox(index) {
+    if (!Array.isArray(lightboxMediaItems) || lightboxMediaItems.length === 0) return;
+    lightboxCurrentIndex = index;
+    showMediaInLightbox(index);
+    document.getElementById('media-lightbox').classList.add('active');
+  }
+
+  function closeMediaLightbox() {
+    document.getElementById('media-lightbox').classList.remove('active');
+    lightboxCurrentIndex = 0;
+  }
+
+  function showMediaInLightbox(index) {
+    const media = lightboxMediaItems[index];
+    if (!media) return;
+
+    const url = media.url || media.dataUrl || '';
+    const name = media.name || 'Media';
+    const isImage = media.type && (media.type.startsWith('image/') || url.includes('.jpg') || url.includes('.png') || url.includes('.gif'));
+
+    let mediaHtml = '';
+    if (isImage) {
+      mediaHtml = '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name) + '" class="lightbox-media"/>';
+    } else if (media.type && media.type.startsWith('video/')) {
+      mediaHtml = '<video controls class="lightbox-media"><source src="' + escapeHtml(url) + '" type="' + escapeHtml(media.type) + '"/></video>';
+    } else {
+      mediaHtml = '<div style="color:var(--muted); font-size:14px;">File: ' + escapeHtml(name) + '</div>';
+    }
+
+    document.getElementById('lightbox-media-wrapper').innerHTML = mediaHtml;
+    document.getElementById('lightbox-counter').textContent = (index + 1) + ' / ' + lightboxMediaItems.length;
+    document.getElementById('lightbox-prev').disabled = index === 0;
+    document.getElementById('lightbox-next').disabled = index === lightboxMediaItems.length - 1;
+  }
+
+  function prevMediaItem() {
+    if (lightboxCurrentIndex > 0) {
+      lightboxCurrentIndex--;
+      showMediaInLightbox(lightboxCurrentIndex);
+    }
+  }
+
+  function nextMediaItem() {
+    if (lightboxCurrentIndex < lightboxMediaItems.length - 1) {
+      lightboxCurrentIndex++;
+      showMediaInLightbox(lightboxCurrentIndex);
+    }
+  }
+
+  document.addEventListener('click', function(event) {
+    if (event.target.closest('#side-nav') === null && event.target.closest('.menu-toggle') === null) {
+      toggleSidebar(false);
+    }
+  });
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      if (document.getElementById('media-lightbox').classList.contains('active')) {
+        closeMediaLightbox();
+      } else {
+        closePresentation();
+      }
+    }
+    if (document.getElementById('media-lightbox').classList.contains('active')) {
+      if (event.key === 'ArrowLeft') prevMediaItem();
+      if (event.key === 'ArrowRight') nextMediaItem();
+    }
+  });
+
+  summaryMonthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  initSidebarProfile();
+  refreshTrades();
+</script>
+</body>
+</html>
